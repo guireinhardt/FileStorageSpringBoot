@@ -7,7 +7,10 @@ import java.nio.file.StandardCopyOption;
 
 import com.secretaria.FileStorage.config.FileStorageConfig;
 import com.secretaria.FileStorage.exception.FileStorageException;
+import com.secretaria.FileStorage.exception.FileStorageNotFoundException;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.core.io.Resource;
+import org.springframework.core.io.UrlResource;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
 import org.springframework.web.multipart.MultipartFile;
@@ -37,6 +40,20 @@ public class FileStorageService {
             return  fileName;
         }catch (Exception e){
             throw  new FileStorageException("Não foi possivel salvar o arquivo" + fileName + ". Tente Novamente",e);
+        }
+    }
+    public Resource loadFileAsResource( String fileName){
+        try{
+            Path filePath = this.fileStorageLocation.resolve(fileName).normalize();
+            Resource resource = new UrlResource(filePath.toUri());
+            if (resource.exists()){
+                return  resource;
+            }else {
+                throw new FileStorageNotFoundException("File not found " + fileName );
+            }
+
+        } catch (Exception e) {
+            throw new FileStorageNotFoundException("File not found " + fileName,e );
         }
     }
 }
