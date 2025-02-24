@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <title>Lista de Arquivos e Pastas</title>
+</head>
+<body>
+<h1>Lista de Arquivos e Pastas</h1>
+
+<h2 th:text="'Pasta: ' + ${currentFolder}"></h2>
+
+<h2>Pastas</h2>
+<table>
+    <thead>
+    <tr>
+        <th>Nome</th>
+        <th>Ação</th>
+    </tr>
+    </thead>
+    <tbody>
+    <tr th:each="folder : ${folders}">
+        <td th:text="${folder.name}"></td>
+        <td>
+            <a th:href="@{/storage/openFolder/{folderName}(folderName=${folder.name})}">Abrir</a>
+        </td>
+    </tr>
+    </tbody>
+</table>
+
+<h2>Arquivos</h2>
+<table>
+    <thead>
+    <tr>
+        <th>Nome</th>
+        <th>Ação</th>
+    </tr>
+    </thead>
+    <tbody>
+    <tr th:each="file : ${files}">
+        <td th:text="${file.name}"></td>
+        <td>
+            <a th:href="@{/storage/downloadFile/{fileName}(fileName=${file.name})}">Baixar</a>
+        </td>
+    </tr>
+    </tbody>
+</table>
+
+<br>
+<a th:href="@{/upload}">Fazer Upload de Novo Arquivo</a>
+<br>
+
+</body>
+</html>

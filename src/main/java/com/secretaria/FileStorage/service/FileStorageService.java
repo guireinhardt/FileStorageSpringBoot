@@ -1,5 +1,6 @@
 package com.secretaria.FileStorage.service;
 
+import java.io.File;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -29,7 +30,7 @@ public class FileStorageService {
         }
     }
 
-    public String storeFile(MultipartFile file) {
+    /* public String storeFile(MultipartFile file) {
         String fileName = StringUtils.cleanPath(file.getOriginalFilename());
         try {
             if (fileName.contains("..")){
@@ -40,6 +41,25 @@ public class FileStorageService {
             return  fileName;
         }catch (Exception e){
             throw  new FileStorageException("Não foi possivel salvar o arquivo" + fileName + ". Tente Novamente",e);
+        }
+    } */
+    public String storeFile(MultipartFile file) throws Exception {
+        // Verifica se o arquivo está vazio
+        if (file.isEmpty()) {
+            throw new Exception("Por favor, selecione um arquivo para enviar.");
+        }
+
+        // Validação do tipo de arquivo (opcional)
+        String fileType = file.getContentType();
+
+        // Lógica para armazenar o arquivo
+        try {
+            // Salva o arquivo no diretório especificado
+            Path destinationFile = fileStorageLocation.resolve(Paths.get(file.getOriginalFilename()));
+            Files.copy(file.getInputStream(), destinationFile);
+            return "Arquivo enviado com sucesso: " + file.getOriginalFilename();
+        } catch (Exception e) {
+            throw new Exception("Erro ao enviar o arquivo: " + e.getMessage());
         }
     }
     public Resource loadFileAsResource( String fileName){
@@ -54,6 +74,19 @@ public class FileStorageService {
 
         } catch (Exception e) {
             throw new FileStorageNotFoundException("File not found " + fileName,e );
+        }
+    }
+    public boolean createFolder(String folderName) {
+        try {
+            File folder = new File(fileStorageLocation + File.separator + folderName);
+            if (!folder.exists()) {
+                return folder.mkdirs(); // Cria a pasta e todas as pastas necessárias
+            } else {
+                return false; // A pasta já existe
+            }
+        } catch (Exception e) {
+            // Log de erro
+            return false;
         }
     }
 }
