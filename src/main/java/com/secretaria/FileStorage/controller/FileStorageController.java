@@ -13,17 +13,20 @@ import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
+import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
+import org.springframework.web.util.UriUtils;
 
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
 import java.util.Arrays;
 import java.util.List;
 import java.util.stream.Collectors;
 
-@RestController
+@Controller
 @RequestMapping("/storage")
 public class FileStorageController {
     private static final Logger logger = LoggerFactory.getLogger(FileStorageController.class);
@@ -34,42 +37,82 @@ public class FileStorageController {
     @Autowired
     private FileListService fileListService;
 
-    @PostMapping("/storage/uploadFile")
-    public UploadFileResponseVO uploadfile(@RequestParam("file") MultipartFile file) throws Exception {
-        String fileName = fileStorageService.storeFile(file);
+    @PostMapping("/uploadFiles")
+    public String uploadFiles(@RequestParam(value = "file", required = false) MultipartFile file,
+                              @RequestParam(value = "files", required = false) MultipartFile[] files) throws Exception {
+        String message;
 
+        // Adicione logs para verificar o que está sendo recebido
+        if (file != null) {
+            logger.info("Arquivo único recebido: " + file.getOriginalFilename());
+        } else {
+            logger.info("Nenhum arquivo único recebido.");
+        }
+
+        if (files != null && files.length > 0) {
+            logger.info("Múltiplos arquivos recebidos: " + files.length);
+        } else {
+            logger.info("Nenhum arquivo múltiplo recebido.");
+        }
+
+        if (file != null && !file.isEmpty()) {
+            // Lógica para upload de um único arquivo
+            UploadFileResponseVO response = uploadSingleFile(file);
+            message = "Arquivo enviado com sucesso: " + response.getFileName();
+        } else if (files != null && files.length > 0) {
+            // Lógica para upload de múltiplos arquivos
+            List<UploadFileResponseVO> responses = uploadMultipleFiles(files);
+            message = "Arquivos enviados com sucesso: " + responses.stream()
+                    .map(UploadFileResponseVO::getFileName)
+                    .collect(Collectors.joining(", "));
+        } else {
+            // Redirecionar para a página de erro se nenhum arquivo for enviado
+            return "redirect:/error?message=" + UriUtils.encode("Por favor, selecione um arquivo para enviar.", StandardCharsets.UTF_8);
+        }
+
+        // Redirecionar para a página de sucesso
+        return "redirect:/success?message=" + UriUtils.encode(message, StandardCharsets.UTF_8);
+    }
+
+    private UploadFileResponseVO uploadSingleFile(MultipartFile file) throws Exception {
+        String fileName = fileStorageService.storeFile(file);
         String fileDownloadUri = ServletUriComponentsBuilder.fromCurrentContextPath()
                 .path("/downloadFile/")
                 .path(fileName)
                 .toUriString();
-
-        return new UploadFileResponseVO(fileName,fileDownloadUri,file.getContentType(),file.getSize());
+        return new UploadFileResponseVO(fileName, fileDownloadUri, file.getContentType(), file.getSize());
     }
 
-    @PostMapping("/storage/uploadMultipleFiles")
-    public List<UploadFileResponseVO> uploadMultipleFiles(@RequestParam("files") MultipartFile[] files){
-        return Arrays.asList(files)
-                .stream()
+    private List<UploadFileResponseVO> uploadMultipleFiles(MultipartFile[] files) {
+        return Arrays.stream(files)
                 .map(file -> {
                     try {
-                        return uploadfile(file);
+                        return uploadSingleFile(file);
                     } catch (Exception e) {
                         throw new RuntimeException(e);
                     }
                 })
-                .collect(Collectors.toList());
+                    .collect(Collectors.toList());
+        }
 
-    }
-    @GetMapping("/storage/downloadFile/{fileName:.+}")
+        @GetMapping("/success")
+        public String successPage(@RequestParam String message, Model model) {
+            model.addAttribute("message", message);
+            return "success"; // Nome do arquivo HTML sem a extensão
+        }
+
+        @GetMapping("/error")
+        public String errorPage(@RequestParam String message, Model model) {
+            model.addAttribute("message", message);
+            return "error"; // Nome do arquivo HTML sem a extensão
+        }
+    @GetMapping("/downloadFile/{fileName:.+}")
     public ResponseEntity<Resource> downloadFile(@PathVariable String fileName, HttpServletRequest request) {
-
         Resource resource = fileStorageService.loadFileAsResource(fileName);
-
         String contentType = null;
         try {
             contentType = request.getServletContext().getMimeType(resource.getFile().getAbsolutePath());
-
-        }catch (Exception e){
+        } catch (Exception e) {
             logger.info("Could not determine file type");
         }
         if (contentType == null) {
@@ -80,7 +123,8 @@ public class FileStorageController {
                 .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"" + resource.getFilename() + "\"")
                 .body(resource);
     }
-    @PostMapping("/storage/createFolder")
+
+    @PostMapping("/createFolder")
     public ResponseEntity<String> createFolder(@RequestParam("folderName") String folderName) {
         boolean isCreated = fileStorageService.createFolder(folderName);
         if (isCreated) {
@@ -90,23 +134,12 @@ public class FileStorageController {
                     .body("Essa pasta já existe:  " + folderName);
         }
     }
-    @PostMapping("/storage/enviar") // Mapeia a URL /enviar
-    public String processarFormulario(@ModelAttribute("file") MultipartFile file, Model model) {
-        // Lógica para processar o upload do arquivo
-        String fileName = null;
-        try {
-            fileName = fileStorageService.storeFile(file);
-        } catch (Exception e) {
-            throw new RuntimeException(e);
-        }
-        model.addAttribute("message", "Arquivo enviado com sucesso: " + fileName);
-        return "resultado"; // Retorna a página de resultado
-    }
+
     @GetMapping("/")
     public List<String> listFilesAndFolders() {
         Path rootLocation = fileListService.getRootLocation(); // Obtém o diretório raiz
         return fileListService.listFilesInDirectory(Path.of(String.valueOf(rootLocation))); // Usa o FileListService para listar arquivos e pastas
     }
-    }
+}
 
 

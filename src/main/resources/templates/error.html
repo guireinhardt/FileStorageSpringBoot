@@ -1,11 +1,11 @@
 <!DOCTYPE html>
 <html xmlns:th="http://www.thymeleaf.org">
 <head>
-    <title>Resultado do Upload</title>
+  <title>Erro</title>
 </head>
 <body>
-<h1 th:text="${message}"></h1>
-<a th:href="@{/upload}">Fazer outro upload</a>
+<h1>Ocorreu um Erro!</h1>
+<p th:text="${message}">Uma mensagem de erro será exibida aqui.</p>
 <a th:href="@{/}">Voltar para a lista de arquivos</a>
 </body>
 </html>

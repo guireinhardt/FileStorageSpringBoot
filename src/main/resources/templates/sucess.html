@@ -1,0 +1,12 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <title>Upload Bem-Sucedido</title>
+</head>
+<body>
+<h1>Upload Bem-Sucedido!</h1>
+<p th:text="${message}">Arquivo enviado com sucesso!</p>
+<a th:href="@{/upload}">Fazer outro upload</a>
+<a th:href="@{/}">Voltar para a lista de arquivos</a>
+</body>
+</html>

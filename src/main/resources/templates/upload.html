@@ -5,9 +5,17 @@
 </head>
 <body>
 <h1>Upload de Arquivos</h1>
-<form action="/storage/enviar" method="POST" enctype="multipart/form-data">
-    <!-- Campos do formulário -->
-    <input type="file" name="file" required />
+<form action="/storage/uploadFiles" method="POST" enctype="multipart/form-data">
+    <!-- Campo para upload de múltiplos arquivos -->
+    <label for="files">Selecione os arquivos:</label>
+    <input type="file" name="files" multiple />
+    <br><br>
+
+    <!-- Campo para o caminho da pasta -->
+    <label for="folderPath">Caminho da Pasta (opcional):</label>
+    <input type="text" name="folderPath" placeholder="Digite o caminho da pasta" />
+    <br><br>
+
     <button type="submit">Enviar</button>
 </form>
 <br>
