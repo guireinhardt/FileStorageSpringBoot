@@ -1,6 +1,7 @@
 package com.secretaria.FileStorage.service;
 
 import java.io.File;
+import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -43,23 +44,35 @@ public class FileStorageService {
             throw  new FileStorageException("Não foi possivel salvar o arquivo" + fileName + ". Tente Novamente",e);
         }
     } */
-    public String storeFile(MultipartFile file) throws Exception {
-        // Verifica se o arquivo está vazio
-        if (file.isEmpty()) {
-            throw new Exception("Por favor, selecione um arquivo para enviar.");
+    public String storeFile(MultipartFile file, String folderPath) throws IOException {
+        Path destinationFile = this.fileStorageLocation.resolve(Paths.get(folderPath)).resolve(file.getOriginalFilename()).normalize().toAbsolutePath();
+        Files.copy(file.getInputStream(), destinationFile, StandardCopyOption.REPLACE_EXISTING);
+        return file.getOriginalFilename();
+    }
+
+
+    private String validateFolderPath(String folderPath) {
+        if (folderPath == null || folderPath.isEmpty()) {
+            return fileStorageLocation.toString(); // Retorna o diretório base se nenhum caminho for fornecido
         }
 
-        // Validação do tipo de arquivo (opcional)
-        String fileType = file.getContentType();
-
-        // Lógica para armazenar o arquivo
         try {
-            // Salva o arquivo no diretório especificado
-            Path destinationFile = fileStorageLocation.resolve(Paths.get(file.getOriginalFilename()));
-            Files.copy(file.getInputStream(), destinationFile);
-            return "Arquivo enviado com sucesso: " + file.getOriginalFilename();
-        } catch (Exception e) {
-            throw new Exception("Erro ao enviar o arquivo: " + e.getMessage());
+            // Cria um Path a partir do folderPath fornecido
+            Path path = Paths.get(folderPath).normalize();
+
+            // Verifica se o caminho está dentro do diretório base
+            if (!path.startsWith(fileStorageLocation)) {
+                return null; // Caminho inválido
+            }
+
+            // Verifica se o diretório existe, se não, cria
+            if (!Files.exists(path)) {
+                Files.createDirectories(path); // Cria o diretório se não existir
+            }
+
+            return path.toString(); // Retorna o caminho validado
+        } catch (IOException e) {
+            return null; // Retorna null se ocorrer um erro
         }
     }
     public Resource loadFileAsResource( String fileName){

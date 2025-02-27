@@ -5,19 +5,26 @@
 </head>
 <body>
 <h1>Upload de Arquivos</h1>
-<form action="/storage/uploadFiles" method="POST" enctype="multipart/form-data">
-    <!-- Campo para upload de múltiplos arquivos -->
-    <label for="files">Selecione os arquivos:</label>
-    <input type="file" name="files" multiple />
-    <br><br>
 
-    <!-- Campo para o caminho da pasta -->
-    <label for="folderPath">Caminho da Pasta (opcional):</label>
-    <input type="text" name="folderPath" placeholder="Digite o caminho da pasta" />
-    <br><br>
-
+<form action="/storage/uploadFiles" method="post" enctype="multipart/form-data">
+    <input type="text" name="folderPath" th:value="${currentFolder}" hidden>
+    <label for="file">Selecione um arquivo para upload:</label>
+    <input type="file" name="file">
     <button type="submit">Enviar</button>
 </form>
+
+<h3>Pastas</h3>
+<ul>
+    <li th:each="folder : ${folders}">
+        <a th:href="@{/storage/openFolder/{folderName}(folderName=${folder.name})}" th:text="${folder.name}"></a>
+    </li>
+</ul>
+
+<h3>Arquivos</h3>
+<ul>
+    <li th:each="file : ${files}" th:text="${file.name}"></li>
+</ul>
+
 <br>
 <a th:href="@{/}">Voltar para a lista de arquivos</a>
 </body>

@@ -88,7 +88,6 @@ public class FileViewController {
         model.addAttribute("folders", folders); // Adiciona a lista de subpastas ao modelo
         model.addAttribute("files", files); // Adiciona a lista de arquivos ao modelo
         model.addAttribute("currentFolder", folderName); // Adiciona o nome da pasta atual ao modelo
-        model.addAttribute("parentFolder", folderPath.getParent().getFileName().toString()); // Adiciona o nome da pasta pai ao modelo
-        return "list"; // Retorna o nome do template a ser renderizado
+        return "upload"; // Retorna o template upload.html
     }
 }

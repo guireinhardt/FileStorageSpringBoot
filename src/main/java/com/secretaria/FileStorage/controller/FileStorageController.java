@@ -22,6 +22,7 @@ import org.springframework.web.util.UriUtils;
 
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -39,61 +40,48 @@ public class FileStorageController {
 
     @PostMapping("/uploadFiles")
     public String uploadFiles(@RequestParam(value = "file", required = false) MultipartFile file,
-                              @RequestParam(value = "files", required = false) MultipartFile[] files) throws Exception {
+                              @RequestParam(value = "files", required = false) MultipartFile[] files,
+                              @RequestParam("folderPath") String folderPath) throws Exception {
         String message;
-
-        // Adicione logs para verificar o que está sendo recebido
-        if (file != null) {
-            logger.info("Arquivo único recebido: " + file.getOriginalFilename());
-        } else {
-            logger.info("Nenhum arquivo único recebido.");
-        }
-
-        if (files != null && files.length > 0) {
-            logger.info("Múltiplos arquivos recebidos: " + files.length);
-        } else {
-            logger.info("Nenhum arquivo múltiplo recebido.");
-        }
 
         if (file != null && !file.isEmpty()) {
             // Lógica para upload de um único arquivo
-            UploadFileResponseVO response = uploadSingleFile(file);
+            UploadFileResponseVO response = uploadSingleFile(file, folderPath);
             message = "Arquivo enviado com sucesso: " + response.getFileName();
         } else if (files != null && files.length > 0) {
             // Lógica para upload de múltiplos arquivos
-            List<UploadFileResponseVO> responses = uploadMultipleFiles(files);
+            List<UploadFileResponseVO> responses = uploadMultipleFiles(files, folderPath);
             message = "Arquivos enviados com sucesso: " + responses.stream()
                     .map(UploadFileResponseVO::getFileName)
                     .collect(Collectors.joining(", "));
         } else {
-            // Redirecionar para a página de erro se nenhum arquivo for enviado
             return "redirect:/error?message=" + UriUtils.encode("Por favor, selecione um arquivo para enviar.", StandardCharsets.UTF_8);
         }
 
-        // Redirecionar para a página de sucesso
         return "redirect:/success?message=" + UriUtils.encode(message, StandardCharsets.UTF_8);
     }
 
-    private UploadFileResponseVO uploadSingleFile(MultipartFile file) throws Exception {
-        String fileName = fileStorageService.storeFile(file);
+    private UploadFileResponseVO uploadSingleFile(MultipartFile file, String folderPath) throws Exception {
+        String fileName = fileStorageService.storeFile(file, folderPath); // Passa o folderPath para o serviço de armazenamento
         String fileDownloadUri = ServletUriComponentsBuilder.fromCurrentContextPath()
                 .path("/downloadFile/")
                 .path(fileName)
-                .toUriString();
+                .toString();
         return new UploadFileResponseVO(fileName, fileDownloadUri, file.getContentType(), file.getSize());
     }
 
-    private List<UploadFileResponseVO> uploadMultipleFiles(MultipartFile[] files) {
-        return Arrays.stream(files)
-                .map(file -> {
-                    try {
-                        return uploadSingleFile(file);
-                    } catch (Exception e) {
-                        throw new RuntimeException(e);
-                    }
-                })
-                    .collect(Collectors.toList());
+    private List<UploadFileResponseVO> uploadMultipleFiles(MultipartFile[] files, String folderPath) throws Exception {
+        List<UploadFileResponseVO> responses = new ArrayList<>();
+        for (MultipartFile file : files) {
+            String fileName = fileStorageService.storeFile(file, folderPath); // Passa o folderPath para o serviço de armazenamento
+            String fileDownloadUri = ServletUriComponentsBuilder.fromCurrentContextPath()
+                    .path("/downloadFile/")
+                    .path(fileName)
+                    .toString();
+            responses.add(new UploadFileResponseVO(fileName, fileDownloadUri, file.getContentType(), file.getSize()));
         }
+        return responses;
+    }
 
         @GetMapping("/success")
         public String successPage(@RequestParam String message, Model model) {
