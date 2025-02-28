@@ -17,6 +17,7 @@ import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
+import org.springframework.web.servlet.ModelAndView;
 import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 import org.springframework.web.util.UriUtils;
 
@@ -89,11 +90,11 @@ public class FileStorageController {
             return "success"; // Nome do arquivo HTML sem a extensão
         }
 
-        @GetMapping("/error")
+        /* @GetMapping("/error")
         public String errorPage(@RequestParam String message, Model model) {
             model.addAttribute("message", message);
             return "error"; // Nome do arquivo HTML sem a extensão
-        }
+        } */
     @GetMapping("/downloadFile/{fileName:.+}")
     public ResponseEntity<Resource> downloadFile(@PathVariable String fileName, HttpServletRequest request) {
         Resource resource = fileStorageService.loadFileAsResource(fileName);
@@ -111,9 +112,15 @@ public class FileStorageController {
                 .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"" + resource.getFilename() + "\"")
                 .body(resource);
     }
+    //rota para renderizar o create Folder
+    @GetMapping("/createFolderForm")
+    public String showCreateFolderForm() {
+        logger.info("Acessando o formulário de criação de pasta");
+        return "createFolderForm"; // Nome do template HTML do formulário
+    }
 
     @PostMapping("/createFolder")
-    public ResponseEntity<String> createFolder(@RequestParam("folderName") String folderName) {
+    /* public ResponseEntity<String> createFolder(@RequestParam("folderName") String folderName) {
         boolean isCreated = fileStorageService.createFolder(folderName);
         if (isCreated) {
             return ResponseEntity.ok("Pasta criada com sucesso: " + folderName);
@@ -121,7 +128,20 @@ public class FileStorageController {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                     .body("Essa pasta já existe:  " + folderName);
         }
+    } */
+    public ModelAndView createFolder(@RequestParam("folderName") String folderName) {
+        boolean isCreated = fileStorageService.createFolder(folderName);
+        ModelAndView modelAndView = new ModelAndView("folderResult"); // Nome do template HTML
+
+        if (isCreated) {
+            modelAndView.addObject("message", "Pasta criada com sucesso: " + folderName);
+        } else {
+            modelAndView.addObject("message", "Essa pasta já existe: " + folderName);
+        }
+
+        return modelAndView;
     }
+
 
     @GetMapping("/")
     public List<String> listFilesAndFolders() {
