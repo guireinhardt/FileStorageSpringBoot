@@ -1,17 +1,16 @@
 package com.secretaria.FileStorage.controller;
 
+import com.secretaria.FileStorage.config.KeywordConfig;
 import com.secretaria.FileStorage.exception.FileStorageException;
 import com.secretaria.FileStorage.service.FileListService;
+import com.secretaria.FileStorage.service.FileSearchService;
 import com.secretaria.FileStorage.service.FileStorageService;
 import com.secretaria.FileStorage.vo.FileVO;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.ServletRequestParameterPropertyValues;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.ModelAttribute;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
@@ -30,6 +29,10 @@ public class FileViewController {
     private FileListService fileListService;
     @Autowired
     private FileStorageService fileStorageService;
+    @Autowired
+    private FileSearchService fileSearchService;
+    @Autowired
+    private KeywordConfig keywordConfig;
 
 
     @GetMapping("/upload")
@@ -90,4 +93,36 @@ public class FileViewController {
         model.addAttribute("currentFolder", folderName); // Adiciona o nome da pasta atual ao modelo
         return "upload"; // Retorna o template upload.html
     }
+    // Método para a página de busca
+    @GetMapping("/search")
+    public String search(@RequestParam(required = false) String query,
+                         @RequestParam(required = false) String keyword,
+                         Model model) {
+        List<Path> files = new ArrayList<>();
+
+        // Se a palavra-chave estiver selecionada, adicione-a à consulta
+        if (keyword != null && !keyword.isEmpty()) {
+            query = (query == null ? "" : query) + " " + keyword;
+        }
+
+        if (query == null || query.isEmpty()) {
+            model.addAttribute("files", List.of()); // Retorna uma lista vazia se a consulta estiver vazia
+            model.addAttribute("keywords", keywordConfig.getKeywordList()); // Adiciona a lista de palavras-chave ao modelo
+            return "search"; // Retorna a página de pesquisa
+        }
+
+        try {
+            // Chama o serviço para buscar arquivos com base na consulta
+            files = fileSearchService.searchFiles(query.trim()); // Use trim() para remover espaços em branco
+            model.addAttribute("files", files); // Adiciona os arquivos encontrados ao modelo
+        } catch (IOException e) {
+            e.printStackTrace();
+            model.addAttribute("files", List.of()); // Retorna uma lista vazia em caso de erro
+        }
+
+        model.addAttribute("keywords", keywordConfig.getKeywordList()); // Adiciona a lista de palavras-chave ao modelo
+        return "search"; // Nome do arquivo HTML sem a extensão
+    }
+
+
 }
