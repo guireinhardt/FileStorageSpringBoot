@@ -1,41 +1,24 @@
 <!DOCTYPE html>
-<html lang="pt-BR">
+<html xmlns:th="http://www.thymeleaf.org">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Pesquisa de Arquivos</title>
-    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
+    <title>Busca</title>
 </head>
 <body>
-<div class="container">
-    <h1 class="mt-5">Pesquisa de Arquivos</h1>
-    <form id="searchForm" class="mt-3" action="/search" method="get">
-        <div class="form-group">
-            <label for="query">Digite sua pesquisa:</label>
-            <input type="text" class="form-control" id="query" name="query" >
-        </div>
-        <div class="form-group">
-            <label for="keyword">Escolha uma palavra-chave:</label>
-            <select class="form-control" id="keyword" name="keyword">
-                <option value="">Selecione uma palavra-chave</option>
-                <th:block th:each="keyword : ${keywords}">
-                    <option th:value="${keyword}" th:text="${keyword}"></option>
-                </th:block>
-            </select>
-        </div>
-        <button type="submit" class="btn btn-primary">Pesquisar</button>
-    </form>
-
-    <div id="results" class="mt-4">
-        <h2>Resultados da Pesquisa:</h2>
-        <ul id="resultList" class="list-group">
-            <th:block th:each="file : ${files}">
-                <li class="list-group-item">
-                    <a th:href="@{${file}}" th:text="${file.getFileName()}"></a>
-                </li>
-            </th:block>
-        </ul>
-    </div>
+<h1>Busca de Arquivos</h1>
+<form th:action="@{/search}" method="get">
+    <input type="text" name="query" placeholder="Digite sua busca" />
+    <select name="keyword">
+        <option value="">Selecione uma palavra-chave</option>
+        <option th:each="keyword : ${keywords}" th:value="${keyword}" th:text="${keyword}"></option>
+    </select>
+    <button type="submit">Buscar</button>
+</form>
+<div th:if="${files}">
+    <h2>Resultados da Busca:</h2>
+    <ul>
+        <li th:each="file : ${files}" th:text="${file}"></li>
+    </ul>
 </div>
 </body>
 </html>

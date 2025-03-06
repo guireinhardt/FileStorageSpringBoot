@@ -98,11 +98,13 @@ public class FileViewController {
     public String search(@RequestParam(required = false) String query,
                          @RequestParam(required = false) String keyword,
                          Model model) {
+        System.out.println("Keyword selecionada: " + keyword);
         List<Path> files = new ArrayList<>();
+        System.out.println("Keyword selecionada: " + keyword);
 
         // Se a palavra-chave estiver selecionada, adicione-a à consulta
         if (keyword != null && !keyword.isEmpty()) {
-            query = (query == null ? "" : query) + " " + keyword;
+            query = (query == null ? "" : query.trim()) + " " + keyword.trim();
         }
 
         if (query == null || query.isEmpty()) {
