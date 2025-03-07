@@ -5,8 +5,13 @@ import com.secretaria.FileStorage.exception.FileStorageException;
 import com.secretaria.FileStorage.service.FileListService;
 import com.secretaria.FileStorage.service.FileSearchService;
 import com.secretaria.FileStorage.service.FileStorageService;
+import com.secretaria.FileStorage.service.FileViewService;
 import com.secretaria.FileStorage.vo.FileVO;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.ServletRequestParameterPropertyValues;
@@ -14,6 +19,7 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
+import java.net.URLEncoder;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
@@ -33,6 +39,12 @@ public class FileViewController {
     private FileSearchService fileSearchService;
     @Autowired
     private KeywordConfig keywordConfig;
+
+    private final FileViewService fileViewService;
+    @Autowired
+    public FileViewController(FileViewService fileViewService) {
+        this.fileViewService = fileViewService;
+    }
 
 
     @GetMapping("/upload")
@@ -124,6 +136,43 @@ public class FileViewController {
 
         model.addAttribute("keywords", keywordConfig.getKeywordList()); // Adiciona a lista de palavras-chave ao modelo
         return "search"; // Nome do arquivo HTML sem a extensão
+    }
+
+    private String sanitizeFileName(String fileName) {
+        // Verifica se o nome do arquivo contém caracteres inválidos
+        if (fileName.contains("..") || fileName.contains("/") || fileName.contains("\\")) {
+            throw new IllegalArgumentException("Nome de arquivo inválido: " + fileName);
+        }
+        System.out.println(fileName);
+        // Retorna o nome do arquivo sem alterações, pois as barras são necessárias
+        return fileName;
+    }
+    @GetMapping("/viewFile/{fileName}")
+    @ResponseBody
+    public ResponseEntity<byte[]> viewFile(@PathVariable String fileName) {
+        try {
+            // Sanitiza o nome do arquivo
+            String sanitizedFileName = sanitizeFileName(fileName);
+            byte[] fileContent = fileViewService.getFileContent(sanitizedFileName);
+            String contentType = fileViewService.getContentType(sanitizedFileName);
+
+            HttpHeaders headers = new HttpHeaders();
+            headers.setContentType(MediaType.parseMediaType(contentType));
+            headers.setContentDispositionFormData("inline", sanitizedFileName);
+
+            return new ResponseEntity<>(fileContent, headers, HttpStatus.OK);
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest().body(("Nome de arquivo inválido: " + e.getMessage()).getBytes());
+        } catch (IOException e) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(("Arquivo não encontrado: " + e.getMessage()).getBytes());
+        }
+    }
+
+
+
+    @ExceptionHandler(Exception.class)
+    public ResponseEntity<String> handleException(Exception e) {
+        return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Erro interno: " + e.getMessage());
     }
 
 

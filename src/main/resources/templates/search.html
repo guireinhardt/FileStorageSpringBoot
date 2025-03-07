@@ -17,7 +17,10 @@
 <div th:if="${files}">
     <h2>Resultados da Busca:</h2>
     <ul>
-        <li th:each="file : ${files}" th:text="${file}"></li>
+        <li th:each="file : ${files}">
+            <span th:text="${file}"></span>
+            <a th:href="@{/viewFile/{fileName}(fileName=${file})}" target="_blank">Visualizar</a>
+        </li>
     </ul>
 </div>
 </body>
