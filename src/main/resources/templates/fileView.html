@@ -1,0 +1,17 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>Visualização de Arquivo</title>
+</head>
+<body>
+<h1>Visualização de Arquivo</h1>
+<div th:if="${fileContent}">
+    <img th:src="@{${fileContent}}" alt="Imagem" />
+</div>
+<div th:if="${error}">
+    <p th:text="${error}"></p>
+</div>
+<a href="#" th:onclick="window.history.back();">Voltar</a>
+</body>
+</html>

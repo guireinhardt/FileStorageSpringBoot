@@ -21,7 +21,7 @@ public class FileSearchService {
         this.fileStorageLocation = fileStorageConfig.getUploadDir();
     }
 
-    public List<Path> searchFiles(String query) throws IOException {
+    public List<String> searchFiles(String query) throws IOException {
         // Converte a consulta em minúsculas para comparação
         String lowerCaseQuery = query.toLowerCase();
 
@@ -30,6 +30,8 @@ public class FileSearchService {
             return paths
                     .filter(Files::isRegularFile) // Filtra apenas arquivos regulares
                     .filter(path -> path.getFileName().toString().toLowerCase().contains(lowerCaseQuery)) // Filtra com base na consulta
+                    .map(Path::getFileName) // Obtém apenas o nome do arquivo
+                    .map(Path::toString) // Converte para String
                     .collect(Collectors.toList());
         }
     }

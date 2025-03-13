@@ -75,7 +75,7 @@ public class FileStorageService {
             return null; // Retorna null se ocorrer um erro
         }
     }
-    public Resource loadFileAsResource( String fileName){
+    /* public Resource loadFileAsResource( String fileName){
         try{
             Path filePath = this.fileStorageLocation.resolve(fileName).normalize();
             Resource resource = new UrlResource(filePath.toUri());
@@ -88,7 +88,7 @@ public class FileStorageService {
         } catch (Exception e) {
             throw new FileStorageNotFoundException("File not found " + fileName,e );
         }
-    }
+    } */
     public boolean createFolder(String folderName) {
         try {
             File folder = new File(fileStorageLocation + File.separator + folderName);
@@ -100,6 +100,23 @@ public class FileStorageService {
         } catch (Exception e) {
             // Log de erro
             return false;
+        }
+    }
+    public Resource loadFileAsResource(String fileName) {
+        try {
+            // Resolve o caminho do arquivo a partir do diretório base
+            Path filePath = this.fileStorageLocation.resolve(fileName).normalize();
+            System.out.println("Tentando carregar o arquivo de: " + filePath.toString()); // Log do caminho
+            Resource resource = new UrlResource(filePath.toUri());
+
+            // Verifica se o recurso existe
+            if (resource.exists()) {
+                return resource;
+            } else {
+                throw new FileStorageNotFoundException("File not found " + fileName);
+            }
+        } catch (Exception e) {
+            throw new FileStorageNotFoundException("File not found " + fileName, e);
         }
     }
 }

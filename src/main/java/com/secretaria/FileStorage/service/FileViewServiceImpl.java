@@ -13,45 +13,79 @@ import java.nio.file.Path;
 public class FileViewServiceImpl implements FileViewService {
 
     private final FileStorageConfig fileStorageConfig;
+    private final EncryptionService encryptionService;
 
     @Autowired
-    public FileViewServiceImpl(FileStorageConfig fileStorageConfig) {
+    public FileViewServiceImpl(FileStorageConfig fileStorageConfig) throws Exception {
         this.fileStorageConfig = fileStorageConfig;
+        this.encryptionService = new EncryptionService(); // Inicializa o serviço de criptografia
     }
 
     @Override
-    public byte[] getFileContent(String fileName) throws IOException {
-        Path filePath = Path.of(fileStorageConfig.getUploadDir(), fileName);
-        return Files.readAllBytes(filePath);
+    public byte[] getFileContent(String encryptedFileName) throws IOException {
+        try {
+            // Descriptografa o nome do arquivo
+            String fileName = encryptionService.decrypt(encryptedFileName);
+            Path filePath = Path.of(fileStorageConfig.getUploadDir(), fileName);
+            return Files.readAllBytes(filePath);
+        } catch (Exception e) {
+            throw new IOException("Erro ao descriptografar o nome do arquivo", e);
+        }
     }
 
     @Override
     public String getContentType(String fileName) {
-        if (fileName.endsWith(".pdf")) {
-            return MediaType.APPLICATION_PDF_VALUE;
-        } else if (fileName.endsWith(".jpg") || fileName.endsWith(".jpeg")) {
-            return MediaType.IMAGE_JPEG_VALUE;
-        } else if (fileName.endsWith(".png")) {
-            return MediaType.IMAGE_PNG_VALUE;
-        } else if (fileName.endsWith(".txt")) {
-            return MediaType.TEXT_PLAIN_VALUE;
-        } else if (fileName.endsWith(".csv")) {
-            return MediaType.TEXT_PLAIN_VALUE; // CSV é tratado como texto
-        } else if (fileName.endsWith(".xls")) {
-            return "application/vnd.ms-excel"; // Excel 97-2003
-        } else if (fileName.endsWith(".xlsx")) {
-            return "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"; // Excel 2007+
-        } else if (fileName.endsWith(".mp4")) {
-            return "video/mp4";
-        } else if (fileName.endsWith(".avi")) {
-            return "video/x-msvideo";
-        } else if (fileName.endsWith(".mov")) {
-            return "video/quicktime";
-        } else if (fileName.endsWith(".wmv")) {
-            return "video/x-ms-wmv";
+        String fileExtension = getFileExtension(fileName).toLowerCase();
+        switch (fileExtension) {
+            case "pdf":
+                return MediaType.APPLICATION_PDF_VALUE;
+            case "jpg":
+            case "jpeg":
+                return MediaType.IMAGE_JPEG_VALUE;
+            case "png":
+                return MediaType.IMAGE_PNG_VALUE;
+            case "gif":
+                return MediaType.IMAGE_GIF_VALUE; // Suporte para GIFs
+            case "txt":
+                return MediaType.TEXT_PLAIN_VALUE; // Arquivos de texto
+            case "html":
+                return MediaType.TEXT_HTML_VALUE; // Arquivos HTML
+            case "mp4":
+                return "video/mp4"; // Tipo de mídia para MP4
+            case "webm":
+                return "video/webm"; // Tipo de mídia para WebM
+            case "ogg":
+                return "video/ogg"; // Tipo de mídia para OGG
+            case "avi":
+                return "video/x-msvideo"; // Tipo de mídia para AVI
+            case "mov":
+                return "video/quicktime"; // Tipo de mídia para MOV
+            case "xls":
+                return "application/vnd.ms-excel"; // Tipo de mídia para XLS
+            case "xlsx":
+                return "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"; // Tipo de mídia para XLSX
+            case "ppt":
+                return "application/vnd.ms-powerpoint"; // Tipo de mídia para PPT
+            case "pptx":
+                return "application/vnd.openxmlformats-officedocument.presentationml.presentation"; // Tipo de mídia para PPTX
+            case "csv":
+                return "text/csv"; // Arquivos CSV
+            default:
+                return MediaType.APPLICATION_OCTET_STREAM_VALUE; // Fallback
         }
-        // Adicione outros tipos conforme necessário
-        return MediaType.APPLICATION_OCTET_STREAM_VALUE; // Tipo padrão
+    }
+
+    private String getFileExtension(String fileName) {
+        int lastIndexOfDot = fileName.lastIndexOf('.');
+        if (lastIndexOfDot == -1 || lastIndexOfDot == 0) {
+            return ""; // Sem extensão
+        }
+        return fileName.substring(lastIndexOfDot + 1);
+    }
+
+
+    // Método para criptografar o nome do arquivo
+    public String encryptFileName(String fileName) throws Exception {
+        return encryptionService.encrypt(fileName);
     }
 }
-

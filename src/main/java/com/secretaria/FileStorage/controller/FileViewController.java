@@ -1,5 +1,6 @@
 package com.secretaria.FileStorage.controller;
 
+import com.secretaria.FileStorage.config.FileStorageConfig;
 import com.secretaria.FileStorage.config.KeywordConfig;
 import com.secretaria.FileStorage.exception.FileStorageException;
 import com.secretaria.FileStorage.service.FileListService;
@@ -8,23 +9,34 @@ import com.secretaria.FileStorage.service.FileStorageService;
 import com.secretaria.FileStorage.service.FileViewService;
 import com.secretaria.FileStorage.vo.FileVO;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.core.io.Resource;
+import org.springframework.core.io.UrlResource;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
+import org.springframework.util.StringUtils;
 import org.springframework.web.bind.ServletRequestParameterPropertyValues;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
+
+import java.io.File;
 import java.io.IOException;
+import java.io.UnsupportedEncodingException;
+import java.net.MalformedURLException;
 import java.net.URLEncoder;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Stream;
+import java.io.UnsupportedEncodingException;
+import java.net.URLEncoder;
+
 
 
 
@@ -41,10 +53,15 @@ public class FileViewController {
     private KeywordConfig keywordConfig;
 
     private final FileViewService fileViewService;
+    private final FileStorageConfig fileStorageConfig;
     @Autowired
-    public FileViewController(FileViewService fileViewService) {
+    public FileViewController(FileViewService fileViewService, FileStorageConfig fileStorageConfig) {
         this.fileViewService = fileViewService;
+        this.fileStorageConfig = fileStorageConfig;
     }
+
+
+
 
 
     @GetMapping("/upload")
@@ -111,7 +128,7 @@ public class FileViewController {
                          @RequestParam(required = false) String keyword,
                          Model model) {
         System.out.println("Keyword selecionada: " + keyword);
-        List<Path> files = new ArrayList<>();
+        List<String> files = new ArrayList<>();
         System.out.println("Keyword selecionada: " + keyword);
 
         // Se a palavra-chave estiver selecionada, adicione-a à consulta
@@ -126,6 +143,7 @@ public class FileViewController {
         }
 
         try {
+
             // Chama o serviço para buscar arquivos com base na consulta
             files = fileSearchService.searchFiles(query.trim()); // Use trim() para remover espaços em branco
             model.addAttribute("files", files); // Adiciona os arquivos encontrados ao modelo
@@ -147,27 +165,28 @@ public class FileViewController {
         // Retorna o nome do arquivo sem alterações, pois as barras são necessárias
         return fileName;
     }
-    @GetMapping("/viewFile/{fileName}")
-    @ResponseBody
-    public ResponseEntity<byte[]> viewFile(@PathVariable String fileName) {
+
+
+    @GetMapping("/view/{fileName:.+}")
+    public ResponseEntity<Resource> serveFile(@PathVariable String fileName) {
         try {
-            // Sanitiza o nome do arquivo
-            String sanitizedFileName = sanitizeFileName(fileName);
-            byte[] fileContent = fileViewService.getFileContent(sanitizedFileName);
-            String contentType = fileViewService.getContentType(sanitizedFileName);
+            Path filePath = fileStorageConfig.getUploadDirPath().resolve(fileName).normalize();
+            Resource resource = new UrlResource(filePath.toUri());
 
-            HttpHeaders headers = new HttpHeaders();
-            headers.setContentType(MediaType.parseMediaType(contentType));
-            headers.setContentDispositionFormData("inline", sanitizedFileName);
+            if (resource.exists() && resource.isReadable()) {
+                String contentType = fileViewService.getContentType(fileName); // Chame o método do serviço
 
-            return new ResponseEntity<>(fileContent, headers, HttpStatus.OK);
-        } catch (IllegalArgumentException e) {
-            return ResponseEntity.badRequest().body(("Nome de arquivo inválido: " + e.getMessage()).getBytes());
-        } catch (IOException e) {
-            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(("Arquivo não encontrado: " + e.getMessage()).getBytes());
+                return ResponseEntity.ok()
+                        .header(HttpHeaders.CONTENT_DISPOSITION, "inline; filename=\"" + resource.getFilename() + "\"") // Certifique-se de que é "inline"
+                        .contentType(MediaType.parseMediaType(contentType)) // Use o tipo de mídia retornado
+                        .body(resource);
+            } else {
+                return ResponseEntity.notFound().build();
+            }
+        } catch (MalformedURLException e) {
+            return ResponseEntity.notFound().build();
         }
     }
-
 
 
     @ExceptionHandler(Exception.class)

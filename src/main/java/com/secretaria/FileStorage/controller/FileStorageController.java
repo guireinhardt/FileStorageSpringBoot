@@ -120,7 +120,7 @@ public class FileStorageController {
     }
 
     @PostMapping("/createFolder")
-    /* public ResponseEntity<String> createFolder(@RequestParam("folderName") String folderName) {
+     /* public ResponseEntity<String> createFolder(@RequestParam("folderName") String folderName) {
         boolean isCreated = fileStorageService.createFolder(folderName);
         if (isCreated) {
             return ResponseEntity.ok("Pasta criada com sucesso: " + folderName);

@@ -2,24 +2,33 @@
 <html xmlns:th="http://www.thymeleaf.org">
 <head>
     <meta charset="UTF-8">
-    <title>Busca</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Busca de Arquivos</title>
+    <link rel="stylesheet" href="styles.css"> <!-- Adicione um link para o CSS, se necessário -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css"> <!-- Font Awesome -->
 </head>
 <body>
 <h1>Busca de Arquivos</h1>
+
 <form th:action="@{/search}" method="get">
-    <input type="text" name="query" placeholder="Digite sua busca" />
+    <input type="text" name="query" placeholder="Digite sua busca" required />
+
     <select name="keyword">
         <option value="">Selecione uma palavra-chave</option>
         <option th:each="keyword : ${keywords}" th:value="${keyword}" th:text="${keyword}"></option>
     </select>
+
     <button type="submit">Buscar</button>
 </form>
+
 <div th:if="${files}">
     <h2>Resultados da Busca:</h2>
     <ul>
         <li th:each="file : ${files}">
-            <span th:text="${file}"></span>
-            <a th:href="@{/viewFile/{fileName}(fileName=${file})}" target="_blank">Visualizar</a>
+            <a th:href="@{/view/{fileName}(fileName=${file})}" target="_blank">
+                <i class="fas fa-eye"></i> <!-- Ícone de visualização -->
+                <span th:text="${file}"></span> <!-- Nome do arquivo -->
+            </a>
         </li>
     </ul>
 </div>
