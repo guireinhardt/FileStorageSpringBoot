@@ -3,6 +3,7 @@ package com.secretaria.FileStorage.controller;
 import com.secretaria.FileStorage.config.FileStorageConfig;
 import com.secretaria.FileStorage.config.KeywordConfig;
 import com.secretaria.FileStorage.exception.FileStorageException;
+import com.secretaria.FileStorage.exception.FileStorageNotFoundException;
 import com.secretaria.FileStorage.service.FileListService;
 import com.secretaria.FileStorage.service.FileSearchService;
 import com.secretaria.FileStorage.service.FileStorageService;
@@ -193,6 +194,47 @@ public class FileViewController {
     public ResponseEntity<String> handleException(Exception e) {
         return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Erro interno: " + e.getMessage());
     }
+
+    // Método para buscar imagens e vídeos no banco de imagens
+    @GetMapping("/banco-de-imagens/search")
+    public String searchMedia(@RequestParam(required = false) String query, Model model) throws IOException {
+        List<String> mediaFiles = new ArrayList<>();
+
+        if (query == null || query.isEmpty()) {
+            // Se a consulta estiver vazia, você pode decidir o que fazer
+            // Por exemplo, retornar todos os arquivos de mídia
+            mediaFiles = fileSearchService.getAllMediaFiles(); // Método que retorna todos os arquivos de mídia
+        } else {
+            try {
+                // Chama o serviço para buscar arquivos de mídia com base na consulta
+                mediaFiles = fileSearchService.searchMediaFiles(query.trim());
+            } catch (IOException e) {
+                e.printStackTrace();
+                model.addAttribute("mediaFiles", List.of()); // Retorna uma lista vazia em caso de erro
+            }
+        }
+
+        model.addAttribute("mediaFiles", mediaFiles);
+        return "bancodeimagens"; // Retorna a página do banco de imagens
+    }
+    @GetMapping("/download/{fileName:.+}")
+    public ResponseEntity<Resource> downloadFile(@PathVariable String fileName) {
+        try {
+            // Usa o método loadFileAsResource do FileStorageService
+            Resource resource = fileStorageService.loadFileAsResource(fileName);
+
+            // Define o cabeçalho Content-Disposition para download
+            return ResponseEntity.ok()
+                    .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"" + resource.getFilename() + "\"")
+                    .contentType(MediaType.APPLICATION_OCTET_STREAM) // Tipo padrão para downloads
+                    .body(resource);
+        } catch (FileStorageNotFoundException e) {
+            return ResponseEntity.notFound().build();
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+        }
+    }
+
 
 
 }

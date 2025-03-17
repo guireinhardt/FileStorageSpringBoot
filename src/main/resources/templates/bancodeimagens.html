@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <title>Banco de Imagens e Vídeos</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+        }
+        .search-container {
+            text-align: center;
+            margin-bottom: 20px;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+        }
+        th, td {
+            border: 1px solid #ccc;
+            padding: 10px;
+            text-align: center;
+        }
+        th {
+            background-color: #f2f2f2;
+        }
+        img {
+            max-width: 100px;
+            max-height: 100px;
+        }
+        video {
+            max-width: 100px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+        }
+        .download-button {
+            display: block;
+            margin-top: 5px;
+            text-decoration: none;
+            color: white;
+            background-color: #007bff;
+            padding: 5px 10px;
+            border-radius: 5px;
+        }
+        .view-button {
+            color: #007bff;
+            text-decoration: none;
+            font-size: 20px; /* Tamanho do ícone */
+        }
+    </style>
+</head>
+<body>
+
+<h1>Banco de Imagens e Vídeos</h1>
+
+<div class="navigation">
+    <a href="/" class="home-button">Página Inicial</a>
+</div>
+<div class="search-container">
+    <form action="/banco-de-imagens/search" method="get">
+        <input type="text" name="query" placeholder="Buscar imagens e vídeos..." required>
+        <input type="submit" value="Buscar">
+    </form>
+</div>
+
+<h2>Arquivos de Mídia</h2>
+<table>
+    <thead>
+    <tr>
+        <th>Nome do Arquivo</th>
+        <th>Visualização</th>
+        <th>Ação</th>
+    </tr>
+    </thead>
+    <tbody>
+    <th:block th:each="mediaFile : ${mediaFiles}">
+        <tr>
+            <td th:text="${mediaFile}"></td>
+            <td>
+                <th:block th:if="${mediaFile.endsWith('.jpg') || mediaFile.endsWith('.jpeg') || mediaFile.endsWith('.png') || mediaFile.endsWith('.gif') || mediaFile.endsWith('.bmp') || mediaFile.endsWith('.webp')}">
+                    <a th:href="@{/view/{fileName}(fileName=${mediaFile})}" target="_blank" class="view-button">
+                        <i class="fas fa-eye"></i> <!-- Ícone de olho -->
+                    </a>
+                </th:block>
+                <th:block th:if="${mediaFile.endsWith('.mp4') || mediaFile.endsWith('.MP4') || mediaFile.endsWith('.mov') || mediaFile.endsWith('.wmv') || mediaFile.endsWith('.flv') || mediaFile.endsWith('.mkv')}">
+                    <a th:href="@{/view/{fileName}(fileName=${mediaFile})}" target="_blank" class="view-button">
+                        <i class="fas fa-eye"></i> <!-- Ícone de olho -->
+                    </a>
+                </th:block>
+            </td>
+            <td>
+                <a th:href="@{/download/{mediaFile}(mediaFile=${mediaFile})}" class="download-button" download>Download</a>
+            </td>
+        </tr>
+    </th:block>
+    </tbody>
+</table>
+
+<!-- Adicione o Font Awesome para os ícones -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/js/all.min.js"></script>
+
+</body>
+</html>
