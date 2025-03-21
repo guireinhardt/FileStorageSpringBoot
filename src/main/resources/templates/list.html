@@ -2,60 +2,72 @@
 <html xmlns:th="http://www.thymeleaf.org">
 <head>
     <title>Lista de Arquivos e Pastas</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <link rel="stylesheet" href="/css/styles.css"> <!-- Link para o arquivo CSS externo -->
 </head>
 <body>
-<h1>Lista de Arquivos e Pastas</h1>
 
-<!-- Links de navegação -->
-<div>
-    <a th:href="@{/banco-de-imagens/search}">Banco de Imagens</a> |
+<div class="navbar">
+    <a th:href="@{/banco-de-imagens/search}">Banco de Imagens</a>
     <a th:href="@{/search}">Buscar Arquivos</a>
+    <a th:href="@{/upload}">Fazer Upload de Novo Arquivo</a>
+    <a th:href="@{/storage/createFolderForm}">Criar Nova Pasta</a>
 </div>
 
-<h2 th:text="'Pasta: ' + ${currentFolder}"></h2>
+<div class="container">
+    <h1>Lista de Arquivos e Pastas</h1>
+    <h2 th:text="'Pasta: ' + ${currentFolder}"></h2>
 
-<h2>Pastas</h2>
-<table>
-    <thead>
-    <tr>
-        <th>Nome</th>
-        <th>Ação</th>
-    </tr>
-    </thead>
-    <tbody>
-    <tr th:each="folder : ${folders}">
-        <td th:text="${folder.name}"></td>
-        <td>
-            <a th:href="@{/storage/openFolder/{folderName}(folderName=${folder.name})}">Abrir</a>
-        </td>
-    </tr>
-    </tbody>
-</table>
+    <h2>Pastas</h2>
+    <table>
+        <thead>
+        <tr>
+            <th>Nome</th>
+            <th>Ação</th>
+        </tr>
+        </thead>
+        <tbody>
+        <tr th:each="folder : ${folders}">
+            <td th:text="${folder.name}"></td>
+            <td>
+                <a th:href="@{/storage/openFolder/{folderName}(folderName=${folder.name})}">Abrir</a>
+            </td>
+        </tr>
+        </tbody>
+    </table>
 
-<h2>Arquivos</h2>
-<table>
-    <thead>
-    <tr>
-        <th>Nome</th>
-        <th>Ação</th>
-    </tr>
-    </thead>
-    <tbody>
-    <tr th:each="file : ${files}">
-        <td th:text="${file.name}"></td>
-        <td>
-            <a th:href="@{/storage/downloadFile/{fileName}(fileName=${file.name})}">Baixar</a>
-        </td>
-    </tr>
-    </tbody>
-</table>
+    <h2>Arquivos</h2>
+    <table>
+        <thead>
+        <tr>
+            <th>Nome</th>
+            <th>Ação</th>
+        </tr>
+        </thead>
+        <tbody>
+        <tr th:each="file : ${files}">
+            <td th:text="${file.name}"></td>
+            <td>
+                <a th:href="@{/storage/downloadFile/{fileName}(fileName=${file.name})}">Baixar</a>
+            </td>
+        </tr>
+        </tbody>
+    </table>
 
-<br>
-<a th:href="@{/upload}">Fazer Upload de Novo Arquivo</a>
-<br>
 
-<!-- Link para criar uma nova pasta -->
-<a th:href="@{/storage/createFolderForm}">Criar Nova Pasta</a>
+
+    <!-- Link para criar uma nova pasta -->
+
+</div>
+
+<!-- Botão flutuante para criar nova pasta -->
+<a class="floating-button" th:href="@{/storage/createFolderForm}">
+    <i class="fas fa-folder-plus"></i>
+</a>
+
+<div class="footer">
+    &copy; 2023 Seu Nome ou Empresa
+</div>
 
 </body>
 </html>
