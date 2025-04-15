@@ -12,6 +12,8 @@ import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
+import org.springframework.security.web.authentication.AuthenticationSuccessHandler;
+import org.springframework.security.web.authentication.SimpleUrlAuthenticationSuccessHandler;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 
 @Configuration
@@ -33,7 +35,10 @@ public class SecurityConfig {
                             .requestMatchers(HttpMethod.POST,"/auth/register").permitAll()
                             .requestMatchers(HttpMethod.GET,"/h2-console/**").permitAll()
                             .requestMatchers(HttpMethod.POST,"/h2-console/**").permitAll()
-                            .requestMatchers(HttpMethod.POST,"/list").hasRole("ADMIN")
+                            .requestMatchers(HttpMethod.GET,"/").authenticated()
+                            .requestMatchers(HttpMethod.GET,"/search").authenticated()
+                            .requestMatchers(HttpMethod.POST,"/search").authenticated()
+                            .requestMatchers(HttpMethod.GET, "/view/**").authenticated()
                             .anyRequest().authenticated())
                     .headers(headers -> headers.frameOptions().sameOrigin())
                     .addFilterBefore(securityFilter, UsernamePasswordAuthenticationFilter.class)
@@ -46,8 +51,16 @@ public class SecurityConfig {
     public AuthenticationManager authenticationManager(AuthenticationConfiguration authenticationConfiguration) throws Exception {
         return authenticationConfiguration.getAuthenticationManager();
     }
+    @Bean
     public PasswordEncoder passwordEncoder(){
         return new BCryptPasswordEncoder();
+    }
+
+    @Bean
+    public AuthenticationSuccessHandler successHandler() {
+        SimpleUrlAuthenticationSuccessHandler successHandler = new SimpleUrlAuthenticationSuccessHandler();
+        successHandler.setDefaultTargetUrl("/list"); // Redireciona para /list após login bem-sucedido
+        return successHandler;
     }
 
 }

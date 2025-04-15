@@ -1,20 +1,22 @@
 package com.secretaria.FileStorage.controller;
 
-import com.secretaria.FileStorage.entity.AuthenticationDTO;
-import com.secretaria.FileStorage.entity.LoginResponseDTO;
-import com.secretaria.FileStorage.entity.RegisterDTO;
-import com.secretaria.FileStorage.entity.UsersEntity;
+import com.secretaria.FileStorage.entity.*;
 import com.secretaria.FileStorage.infra.security.TokenService;
 import com.secretaria.FileStorage.repository.UsersRepository;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.userdetails.User;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Controller;
+import org.springframework.ui.Model;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
+
+import java.util.Arrays;
+import java.util.List;
 
 @Controller
 @RequestMapping("auth")
@@ -36,8 +38,8 @@ public class AuthenticationController {
 
     // Método para renderizar a página de registro
     @GetMapping("/register")
-    public String registerPage() {
-        return "register"; // Nome do arquivo HTML sem a extensão
+    public String showRegistrationForm(Model model) {
+        return "register"; // Retorna o nome da página de registro (register.html)
     }
     @PostMapping("/login")
     public ResponseEntity login(@RequestBody @Validated AuthenticationDTO data) {
@@ -61,6 +63,7 @@ public class AuthenticationController {
         this.repository.save(newUser);
         return ResponseEntity.ok().build();
     }
+
 }
 
 

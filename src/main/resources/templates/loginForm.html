@@ -24,21 +24,26 @@
         const login = document.getElementById('login').value;
         const password = document.getElementById('password').value;
 
-        const response = await fetch('http://localhost:8080/auth/login', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify({ login, password })
-        });
+        try {
+            const response = await fetch('/auth/login', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ login, password })
+            });
 
-        if (response.ok) {
-            const data = await response.json();
-            localStorage.setItem('token', data.token);
-            alert('Login bem-sucedido!');
-            // Redirecionar para a página principal ou outra página
-        } else {
-            alert('Falha no login. Verifique suas credenciais.');
+            if (response.ok) {
+                const data = await response.json();
+                localStorage.setItem('token', data.token);
+                alert('Login bem-sucedido!');
+                window.location.href = '/'; // 🔁 Redireciona para / raiz
+            } else {
+                alert('Falha no login. Verifique suas credenciais.');
+            }
+        } catch (error) {
+            console.error('Erro ao fazer login:', error);
+            alert('Erro inesperado. Tente novamente.');
         }
     });
 </script>

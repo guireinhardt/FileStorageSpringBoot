@@ -9,6 +9,7 @@ import java.util.Collection;
 import java.util.List;
 
 @Entity
+@Table(name = "users")
 public class UsersEntity implements UserDetails {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -18,13 +19,18 @@ public class UsersEntity implements UserDetails {
     @Column(nullable = false)
     private String password;
     @Enumerated(EnumType.STRING)
-    private UsersRole role;
+    private UsersRole role ;
 
-    public UsersEntity(String username, String password, UsersRole role) {
+    public UsersEntity(){
+
+    };
+    public UsersEntity(String username, String password,UsersRole role) {
         this.username = username;
         this.password = password;
         this.role = role;
+
     }
+
 
     public Long getId() {
         return id;
@@ -36,6 +42,10 @@ public class UsersEntity implements UserDetails {
 
     public String getUsername() {
         return username;
+    }
+
+    public void setRole(UsersRole role) {
+        this.role = role;
     }
 
     @Override

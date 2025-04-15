@@ -1,47 +1,58 @@
 <!DOCTYPE html>
-<html lang="pt-BR">
+<html xmlns:th="http://www.thymeleaf.org">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Registro</title>
+    <title>Registrar Usuário</title>
 </head>
 <body>
-<h2>Registro</h2>
-<form id="registerForm">
-    <label for="login">Usuário:</label>
-    <input type="text" id="login" name="login" required>
-    <br>
+<h1>Registrar Usuário</h1>
+
+<form id="register-form" th:action="@{/auth/register}" method="post">
+    <label for="login">Nome de Usuário:</label>
+    <input type="text" id="login" name="login" th:value="${usuario?.login}" required>
+
     <label for="password">Senha:</label>
     <input type="password" id="password" name="password" required>
-    <br>
+
     <label for="role">Papel:</label>
-    <input type="text" id="role" name="role" required>
-    <br>
+    <select id="role" name="role">
+        <option value="ADMIN" th:selected="${usuario?.role == 'ADMIN'}">Administrador</option>
+        <option value="USERS" th:selected="${usuario?.role == 'USERS'}">Usuário</option>
+    </select>
+
     <button type="submit">Registrar</button>
 </form>
-<p>Já tem uma conta? <a href="loginForm.html">Faça login</a></p>
 
 <script>
-    document.getElementById('registerForm').addEventListener('submit', async function(event) {
+    document.getElementById('register-form').addEventListener('submit', function(event) {
         event.preventDefault();
-        const login = document.getElementById('login').value;
-        const password = document.getElementById('password').value;
-        const role = document.getElementById('role').value;
 
-        const response = await fetch('http://localhost:8080/auth/register', {
+        const data = {
+            login: document.getElementById('login').value,
+            password: document.getElementById('password').value,
+            role: document.getElementById('role').value
+        };
+
+        fetch(this.getAttribute('action'), {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json'
             },
-            body: JSON.stringify({ login, password, role })
+            body: JSON.stringify(data)
+        })
+        .then(response => {
+            if (response.ok) {
+                //alert('Usuário registrado com sucesso!');
+                // Exemplo: redirecionar para login
+                window.location.href = '/auth/login';
+            } else {
+                alert('Erro ao registrar usuário');
+            }
+        })
+        .catch(error => {
+            console.error('Erro:', error);
+            alert('Erro ao enviar dados');
         });
-
-        if (response.ok) {
-            alert('Registro bem-sucedido! Você pode fazer login agora.');
-            window.location.href = 'login.html';
-        } else {
-            alert('Falha no registro. O usuário pode já existir.');
-        }
     });
 </script>
 </body>
