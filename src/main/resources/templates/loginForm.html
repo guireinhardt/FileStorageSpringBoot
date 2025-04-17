@@ -30,14 +30,14 @@
                 headers: {
                     'Content-Type': 'application/json'
                 },
+                credentials: 'include', // Envia e aceita cookies (importantíssimo para cookies com HttpOnly)
                 body: JSON.stringify({ login, password })
             });
 
             if (response.ok) {
-                const data = await response.json();
-                localStorage.setItem('token', data.token);
-                alert('Login bem-sucedido!');
-                window.location.href = '/'; // 🔁 Redireciona para / raiz
+                console.log('Login bem-sucedido!');
+                alert('Login realizado com sucesso!');
+                window.location.href = '/'; // Redireciona para página protegida
             } else {
                 alert('Falha no login. Verifique suas credenciais.');
             }
@@ -46,6 +46,24 @@
             alert('Erro inesperado. Tente novamente.');
         }
     });
+
+    // Exemplo de chamada para rota protegida usando cookie
+    async function fetchProtectedResource() {
+        const response = await fetch('/', { // Substitua pela URL real da sua API
+            method: 'GET',
+            credentials: 'include' // Garante que o cookie vai junto
+        });
+
+        if (response.ok) {
+            const data = await response.json(); // ou .text() se for resposta em texto
+            console.log('Dados protegidos:', data);
+        } else {
+            console.error('Erro ao acessar recurso protegido:', response.status);
+        }
+    }
+
+    // (opcional) Pode chamar isso após o login se quiser testar
+    // fetchProtectedResource();
 </script>
 </body>
 </html>

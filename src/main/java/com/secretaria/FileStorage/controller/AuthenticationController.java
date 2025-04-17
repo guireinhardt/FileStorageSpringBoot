@@ -3,11 +3,16 @@ package com.secretaria.FileStorage.controller;
 import com.secretaria.FileStorage.entity.*;
 import com.secretaria.FileStorage.infra.security.TokenService;
 import com.secretaria.FileStorage.repository.UsersRepository;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseCookie;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.AuthenticationException;
 import org.springframework.security.core.userdetails.User;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Controller;
@@ -21,6 +26,7 @@ import java.util.List;
 @Controller
 @RequestMapping("auth")
 public class AuthenticationController {
+    private static final Logger logger = LoggerFactory.getLogger(AuthenticationController.class);
 
     @Autowired
     private AuthenticationManager authenticationManager;
@@ -42,13 +48,26 @@ public class AuthenticationController {
         return "register"; // Retorna o nome da página de registro (register.html)
     }
     @PostMapping("/login")
-    public ResponseEntity login(@RequestBody @Validated AuthenticationDTO data) {
+    public ResponseEntity<LoginResponseDTO> login(@RequestBody  AuthenticationDTO data) {
+        logger.debug("Iniciando o processo de login para o usuário: {}", data.login());
+
         var usernamePassword = new UsernamePasswordAuthenticationToken(data.login(), data.password());
         var auth = this.authenticationManager.authenticate(usernamePassword);
 
-        var token = tokenService.generateToken((UsersEntity) auth.getPrincipal());
+        logger.debug("Usuário autenticado: {}", auth.getName());
 
-        return ResponseEntity.ok(new LoginResponseDTO(token));
+        var token = tokenService.generateToken((UsersEntity ) auth.getPrincipal());
+        logger.debug("Token gerado com sucesso: {}", token);
+        ResponseCookie cookie = ResponseCookie.from("authToken", token)
+                .httpOnly(true)
+                .secure(false)
+                .path("/")
+                .maxAge(60 * 60) //1 hora
+                .sameSite("Lax")
+                .build();
+        return ResponseEntity.ok()
+                .header(HttpHeaders.SET_COOKIE, cookie.toString()) // Adiciona o cookie ao cabeçalho
+                .body(new LoginResponseDTO(token));
     }
 
     @PostMapping("/register")

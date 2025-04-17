@@ -21,38 +21,40 @@ import org.springframework.security.web.authentication.UsernamePasswordAuthentic
 public class SecurityConfig {
     @Autowired
     SecurityFilter securityFilter;
+
     @Bean
-    public SecurityFilterChain securityFilterChain(HttpSecurity httpSecurity){
+    public SecurityFilterChain securityFilterChain(HttpSecurity httpSecurity) {
         try {
             return httpSecurity
                     .csrf(csrf -> csrf.disable())
-                    .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+                    .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS)) // Sessão sem estado
                     .authorizeHttpRequests(authorize -> authorize
-                            .requestMatchers(HttpMethod.POST,"/auth/login").permitAll()
-                            .requestMatchers(HttpMethod.GET,"/auth/login").permitAll()
-                            //editar a role de criar usuario apenas para admin
-                            .requestMatchers(HttpMethod.GET,"/auth/register").permitAll()
-                            .requestMatchers(HttpMethod.POST,"/auth/register").permitAll()
-                            .requestMatchers(HttpMethod.GET,"/h2-console/**").permitAll()
-                            .requestMatchers(HttpMethod.POST,"/h2-console/**").permitAll()
-                            .requestMatchers(HttpMethod.GET,"/").authenticated()
-                            .requestMatchers(HttpMethod.GET,"/search").authenticated()
-                            .requestMatchers(HttpMethod.POST,"/search").authenticated()
-                            .requestMatchers(HttpMethod.GET, "/view/**").authenticated()
-                            .anyRequest().authenticated())
-                    .headers(headers -> headers.frameOptions().sameOrigin())
-                    .addFilterBefore(securityFilter, UsernamePasswordAuthenticationFilter.class)
+                            .requestMatchers(HttpMethod.POST, "/auth/login").permitAll()
+                            .requestMatchers(HttpMethod.GET, "/auth/login").permitAll()
+                            .requestMatchers(HttpMethod.GET, "/auth/register").permitAll()
+                            .requestMatchers(HttpMethod.POST, "/auth/register").permitAll()
+                            .requestMatchers(HttpMethod.GET, "/h2-console/**").permitAll()
+                            .requestMatchers(HttpMethod.POST, "/h2-console/**").permitAll()
+                            .requestMatchers(HttpMethod.GET, "/").authenticated() // Acesso autenticado à página principal
+                            .requestMatchers(HttpMethod.GET, "/search").authenticated() // Acesso autenticado à busca
+                            .requestMatchers(HttpMethod.POST, "/search").authenticated() // Acesso autenticado para busca
+                            .requestMatchers(HttpMethod.GET, "/view/**").authenticated() // Acesso autenticado à visualização
+                            .anyRequest().authenticated()) // Qualquer outra requisição também precisa de autenticação
+                    .headers(headers -> headers.frameOptions().sameOrigin()) // Permite o H2 console no mesmo domínio
+                    .addFilterBefore(securityFilter, UsernamePasswordAuthenticationFilter.class) // Adiciona o filtro de segurança antes do filtro de autenticação padrão
                     .build();
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
     }
+
     @Bean
     public AuthenticationManager authenticationManager(AuthenticationConfiguration authenticationConfiguration) throws Exception {
         return authenticationConfiguration.getAuthenticationManager();
     }
+
     @Bean
-    public PasswordEncoder passwordEncoder(){
+    public PasswordEncoder passwordEncoder() {
         return new BCryptPasswordEncoder();
     }
 
@@ -62,5 +64,4 @@ public class SecurityConfig {
         successHandler.setDefaultTargetUrl("/list"); // Redireciona para /list após login bem-sucedido
         return successHandler;
     }
-
 }
