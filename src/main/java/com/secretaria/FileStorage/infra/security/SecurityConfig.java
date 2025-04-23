@@ -34,6 +34,7 @@ public class SecurityConfig {
                             .requestMatchers(HttpMethod.GET, "/auth/register").permitAll()
                             .requestMatchers(HttpMethod.POST, "/auth/register").permitAll()
                             .requestMatchers(HttpMethod.GET, "/h2-console/**").permitAll()
+                            .requestMatchers(HttpMethod.GET, "/images/**","/css/**").permitAll()
                             .requestMatchers(HttpMethod.POST, "/h2-console/**").permitAll()
                             .requestMatchers(HttpMethod.GET, "/").authenticated() // Acesso autenticado à página principal
                             .requestMatchers(HttpMethod.GET, "/search").authenticated() // Acesso autenticado à busca

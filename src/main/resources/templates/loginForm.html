@@ -4,21 +4,49 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Login</title>
+    <link rel="stylesheet" href="/css/login.css"> <!-- Link para o CSS -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css"> <!-- Font Awesome para ícones -->
 </head>
 <body>
-<h2>Login</h2>
-<form id="loginForm" th:action="@{/auth/login}" method="post">
-    <label for="login">Usuário:</label>
-    <input type="text" id="login" name="login" required>
-    <br>
-    <label for="password">Senha:</label>
-    <input type="password" id="password" name="password" required>
-    <br>
-    <button type="submit">Entrar</button>
-</form>
-<p>Não tem uma conta? <a th:href="@{/auth/register}">Registre-se</a></p>
+<div class="background">
+    <div class="login-container">
+        <div class="form-side">
+            <img src="/images/agri_.png" alt="Logo" class="logo"> <!-- Logo centralizado -->
+            <h2>Login</h2>
+            <form id="loginForm">
+                <div class="input-group">
+                    <i class="fas fa-user icon-left"></i>
+                    <input type="text" id="login" placeholder="Usuário" required>
+                </div>
+                <div class="input-group">
+                    <i class="fas fa-lock icon-left"></i>
+                    <input type="password" placeholder="Senha" required id="password">
+                    <button type="button" id="togglePassword" class="toggle-password">
+                        <i class="fas fa-eye" id="eyeIcon"></i>
+                    </button>
+                </div>
+                <button type="submit">Entrar</button>
+                <p>Não tem uma conta? <a href="/auth/register">Registrar-se</a></p>
+            </form>
+        </div>
+    </div>
+</div>
 
 <script>
+    document.getElementById('togglePassword').addEventListener('click', function() {
+        const passwordInput = document.getElementById('password');
+        const eyeIcon = document.getElementById('eyeIcon');
+        if (passwordInput.type === 'password') {
+            passwordInput.type = 'text';
+            eyeIcon.classList.remove('fa-eye');
+            eyeIcon.classList.add('fa-eye-slash');
+        } else {
+            passwordInput.type = 'password';
+            eyeIcon.classList.remove('fa-eye-slash');
+            eyeIcon.classList.add('fa-eye');
+        }
+    });
+
     document.getElementById('loginForm').addEventListener('submit', async function(event) {
         event.preventDefault();
         const login = document.getElementById('login').value;
@@ -30,14 +58,14 @@
                 headers: {
                     'Content-Type': 'application/json'
                 },
-                credentials: 'include', // Envia e aceita cookies (importantíssimo para cookies com HttpOnly)
+                credentials: 'include',
                 body: JSON.stringify({ login, password })
             });
 
             if (response.ok) {
                 console.log('Login bem-sucedido!');
                 alert('Login realizado com sucesso!');
-                window.location.href = '/'; // Redireciona para página protegida
+                window.location.href = '/';
             } else {
                 alert('Falha no login. Verifique suas credenciais.');
             }
@@ -46,24 +74,6 @@
             alert('Erro inesperado. Tente novamente.');
         }
     });
-
-    // Exemplo de chamada para rota protegida usando cookie
-    async function fetchProtectedResource() {
-        const response = await fetch('/', { // Substitua pela URL real da sua API
-            method: 'GET',
-            credentials: 'include' // Garante que o cookie vai junto
-        });
-
-        if (response.ok) {
-            const data = await response.json(); // ou .text() se for resposta em texto
-            console.log('Dados protegidos:', data);
-        } else {
-            console.error('Erro ao acessar recurso protegido:', response.status);
-        }
-    }
-
-    // (opcional) Pode chamar isso após o login se quiser testar
-    // fetchProtectedResource();
 </script>
 </body>
 </html>
