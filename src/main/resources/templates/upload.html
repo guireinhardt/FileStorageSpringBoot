@@ -2,8 +2,10 @@
 <html xmlns:th="http://www.thymeleaf.org">
 <head>
     <title>Upload de Arquivos</title>
+    <link rel="stylesheet" href="/css/styles.css"> <!-- Reutiliza o CSS -->
 </head>
 <body>
+
 <h1>Upload de Arquivos</h1>
 
 <form action="/storage/uploadFiles" method="post" enctype="multipart/form-data">
@@ -13,19 +15,46 @@
     <button type="submit">Enviar</button>
 </form>
 
-<h3>Pastas</h3>
-<ul>
-    <li th:each="folder : ${folders}">
-        <a th:href="@{/storage/openFolder/{folderName}(folderName=${folder.name})}" th:text="${folder.name}"></a>
-    </li>
-</ul>
+<!-- Incluir Fragmentos -->
+<div th:replace="fragments :: folderNavigation"></div>
+<div th:replace="fragments :: fileList"></div>
 
-<h3>Arquivos</h3>
-<ul>
-    <li th:each="file : ${files}" th:text="${file.name}"></li>
-</ul>
+<script>
+    // Função para obter o token JWT (aqui você pode pegar de onde for necessário, ex: localStorage, cookie, etc.)
+    function getToken() {
+        return localStorage.getItem('jwtToken'); // Exemplo, você pode adaptar conforme seu caso
+    }
 
-<br>
-<a th:href="@{/}">Voltar para a lista de arquivos</a>
+    // Adiciona o evento de clique nos links das pastas
+    document.querySelectorAll('.open-folder').forEach(link => {
+        link.addEventListener('click', function(event) {
+            event.preventDefault();
+
+            const folderName = this.getAttribute('data-folder');
+            const token = getToken();
+
+            if (token) {
+                fetch(`/storage/openFolder/${folderName}`, {
+                    method: 'GET',
+                    headers: {
+                        'Authorization': 'Bearer ' + token
+                    }
+                })
+                .then(response => response.json())  // ou outro formato, dependendo da resposta
+                .then(data => {
+                    // Lidar com a resposta
+                    console.log(data);
+                    // Talvez você queira atualizar o conteúdo da página com os arquivos da pasta, por exemplo
+                })
+                .catch(error => {
+                    console.error('Erro ao abrir a pasta:', error);
+                });
+            } else {
+                console.error('Token JWT não encontrado');
+            }
+        });
+    });
+</script>
+
 </body>
 </html>

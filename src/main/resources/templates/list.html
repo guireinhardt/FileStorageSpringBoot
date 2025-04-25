@@ -1,73 +1,176 @@
 <!DOCTYPE html>
-<html xmlns:th="http://www.thymeleaf.org">
+<html lang="pt-BR" xmlns:th="http://www.thymeleaf.org">
 <head>
-    <title>Lista de Arquivos e Pastas</title>
+    <meta charset="UTF-8">
+    <title>MeuDrive</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
-    <link rel="stylesheet" href="/css/styles.css"> <!-- Link para o arquivo CSS externo -->
+    <link rel="stylesheet" href="/css/styles.css">
 </head>
 <body>
 
+<!-- Caminho da pasta atual -->
+<input type="hidden" id="folderPath" th:value="${currentFolder}">
+
 <div class="navbar">
-    <a th:href="@{/banco-de-imagens/search}">Banco de Imagens</a>
-    <a th:href="@{/search}">Buscar Arquivos</a>
-    <a th:href="@{/upload}">Fazer Upload de Novo Arquivo</a>
-    <a th:href="@{/storage/createFolderForm}">Criar Nova Pasta</a>
+    <img src="/images/agri_.png" alt="Logo" style="height:40px; vertical-align:middle; margin-right:20px;">
+    <div>
+        <a th:href="@{/banco-de-imagens/search}">Banco de Imagens</a>
+        <a th:href="@{/search}">Buscar</a>
+        <a th:href="@{/upload}">Upload</a>
+        <a th:href="@{/storage/createFolderForm}">Nova Pasta</a>
+    </div>
 </div>
 
 <div class="container">
-    <h1>Lista de Arquivos e Pastas</h1>
+    <h1>MeuDrive</h1>
     <h2 th:text="'Pasta: ' + ${currentFolder}"></h2>
 
+    <!-- Pastas -->
     <h2>Pastas</h2>
-    <table>
-        <thead>
-        <tr>
-            <th>Nome</th>
-            <th>Ação</th>
-        </tr>
-        </thead>
-        <tbody>
-        <tr th:each="folder : ${folders}">
-            <td th:text="${folder.name}"></td>
-            <td>
-                <a th:href="@{/storage/openFolder/{folderName}(folderName=${folder.name})}">Abrir</a>
-            </td>
-        </tr>
-        </tbody>
-    </table>
+    <div class="folder-grid">
+        <a th:each="folder : ${folders}" class="folder" th:href="@{/storage/openFolder/{folderName}(folderName=${folder.name})}">
+            <i class="fas fa-folder fa-lg"></i>
+            <span th:text="${folder.name}"></span>
+        </a>
+    </div>
 
+    <!-- Arquivos -->
     <h2>Arquivos</h2>
     <table>
         <thead>
         <tr>
             <th>Nome</th>
-            <th>Ação</th>
+            <th>Ações</th>
         </tr>
         </thead>
         <tbody>
         <tr th:each="file : ${files}">
             <td th:text="${file.name}"></td>
             <td>
-                <a th:href="@{/storage/downloadFile/{fileName}(fileName=${file.name})}">Baixar</a>
+                <a href="#" class="btn-download" th:attr="data-file=${file.name}"><i class="fas fa-download"></i></a>
+                <a href="#" class="btn-view" th:attr="data-file=${file.name}"><i class="fas fa-eye"></i></a>
+                <a href="#" class="btn-rename" th:attr="data-file=${file.name}"><i class="fas fa-edit"></i></a>
             </td>
         </tr>
         </tbody>
     </table>
-
-
-
-    <!-- Link para criar uma nova pasta -->
-
 </div>
 
-<!-- Botão flutuante para criar nova pasta -->
-<a class="floating-button" th:href="@{/storage/createFolderForm}">
-    <i class="fas fa-folder-plus"></i>
-</a>
+<!-- Barra de progresso -->
+<div class="progress-bar" id="progressBar">
+    <div class="progress-bar-fill" id="progressFill"></div>
+</div>
 
 <div class="footer">
-    &copy; 2023 Seu Nome ou Empresa
+    &copy; 2025 MeuDrive - Todos os direitos reservados
 </div>
 
-</body>
-</html>
+<script>
+    // Evita comportamento padrão ao arrastar
+    ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(event => {
+        window.addEventListener(event, e => {
+            e.preventDefault();
+            e.stopPropagation();
+        });
+    });
+
+    // Soltar arquivo na janela
+    window.addEventListener('drop', e => {
+        const files = e.dataTransfer.files;
+        if (files.length > 0) {
+            uploadFiles(files);
+        }
+    });
+
+    function uploadFiles(files) {
+        const folderPath = document.getElementById("folderPath").value;
+        const formData = new FormData();
+        formData.append("folderPath", folderPath);
+        for (let i = 0; i < files.length; i++) {
+            formData.append("files", files[i]);
+        }
+
+        // Mostrar barra de progresso
+        const progressBar = document.getElementById('progressBar');
+        const progressFill = document.getElementById('progressFill');
+        progressBar.style.display = 'block';
+        progressFill.style.width = '0';
+        progressFill.style.animation = 'loading 2s linear forwards';
+
+        fetch("/storage/uploadFiles", {
+            method: "POST",
+            body: formData,
+            credentials: "include"
+        })
+        .then(response => {
+            if (!response.ok) throw new Error("Falha no upload");
+            return response.text();
+        })
+        .then(() => {
+            setTimeout(() => {
+                progressBar.style.display = 'none';
+                alert("Upload realizado com sucesso!");
+                location.reload();
+            }, 2000);
+        })
+        .catch(err => {
+            progressBar.style.display = 'none';
+            console.error("Erro:", err);
+            alert("Erro ao enviar arquivos.");
+        });
+    }
+
+    // Visualizar
+    document.querySelectorAll('.btn-view').forEach(link => {
+        link.addEventListener('click', e => {
+            e.preventDefault();
+            const file = e.target.closest('a').getAttribute('data-file');
+            window.open(`/view/${encodeURIComponent(file)}`, '_blank');
+        });
+    });
+
+    // Download
+    document.querySelectorAll('.btn-download').forEach(link => {
+        link.addEventListener('click', e => {
+            e.preventDefault();
+            const file = e.target.closest('a').getAttribute('data-file');
+            fetch(`/storage/downloadFile/${encodeURIComponent(file)}`, {
+                method: 'GET',
+                credentials: 'include'
+            })
+            .then(res => res.blob())
+            .then(blob => {
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = file;
+                document.body.appendChild(a);
+                a.click();
+                a.remove();
+            })
+            .catch(err => alert("Erro ao baixar."));
+        });
+    });
+
+    document.querySelectorAll('.btn-rename').forEach(link => {
+    link.addEventListener('click', e => {
+        e.preventDefault();
+        const fileName = e.target.closest('a').getAttribute('data-file');
+        const newName = prompt("Digite o novo nome:", fileName);
+        if (newName && newName !== fileName) {
+            fetch(`/storage/renameFile?oldName=${encodeURIComponent(fileName)}&newName=${encodeURIComponent(newName)}`, {
+                method: 'PATCH',
+                credentials: 'include'
+            })
+            .then(response => {
+                if (response.ok) {
+                    alert("Arquivo renomeado!");
+                    location.reload();
+                } else {
+                    alert("Erro ao renomear.");
+                }
+            });
+        }
+    });
+});
+</script>

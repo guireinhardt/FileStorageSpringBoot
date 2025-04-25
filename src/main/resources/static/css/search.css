@@ -1,0 +1,136 @@
+/* Estilos gerais */
+body {
+    font-family: Arial, sans-serif;
+    margin: 0;
+    padding: 0;
+    background-color: #f4f7f6;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100vh;
+    flex-direction: column;
+}
+
+header {
+    text-align: center;
+    margin-bottom: 20px;
+}
+
+.logo-img {
+    max-width: 150px;
+    height: auto;
+}
+
+/* Contêiner do formulário */
+.form-container {
+    width: 100%;
+    max-width: 500px;
+    padding: 20px;
+    background-color: #fff;
+    border-radius: 8px;
+    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+    text-align: center;
+}
+
+.search-form {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+}
+
+.search-form h2 {
+    font-size: 1.8rem;
+    color: #333;
+}
+
+.search-form input, .search-form select, .search-form button {
+    padding: 10px;
+    font-size: 1rem;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    width: 100%;
+    box-sizing: border-box;
+}
+
+/* Estilo para o botão de busca */
+.search-form button {
+    background-color: #3498db;
+    color: white;
+    border: none;
+    cursor: pointer;
+    transition: background-color 0.3s ease;
+}
+
+.search-form button:hover {
+    background-color: #2980b9;
+}
+
+/* Estilo para o campo de subpalavra-chave */
+.search-form select {
+    appearance: none;
+    -webkit-appearance: none;
+    -moz-appearance: none;
+}
+
+/* Filtros adicionais */
+input[type="text"]:focus, select:focus {
+    border-color: #3498db;
+    box-shadow: 0 0 5px rgba(52, 152, 219, 0.5);
+}
+
+/* Resultados da busca */
+.results {
+    margin-top: 40px;
+    text-align: center;
+}
+
+.results h2 {
+    font-size: 1.5rem;
+    color: #2c3e50;
+}
+
+.results ul {
+    list-style-type: none;
+    padding: 0;
+}
+
+.results li {
+    margin: 10px 0;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.results li a {
+    text-decoration: none;
+    color: #3498db;
+    font-size: 1.1rem;
+    display: flex;
+    align-items: center;
+}
+
+.results li a i {
+    margin-right: 10px;
+    font-size: 1.3rem;
+}
+
+.results li a:hover {
+    color: #2980b9;
+}
+
+/* Responsividade */
+@media (max-width: 768px) {
+    .form-container {
+        width: 80%;
+    }
+
+    .search-form input, .search-form select, .search-form button {
+        width: 100%;
+    }
+}
+
+@media (max-width: 480px) {
+    header {
+        font-size: 1.5rem;
+    }
+}

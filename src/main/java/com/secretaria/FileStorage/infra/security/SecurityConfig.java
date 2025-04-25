@@ -40,6 +40,10 @@ public class SecurityConfig {
                             .requestMatchers(HttpMethod.GET, "/search").authenticated() // Acesso autenticado à busca
                             .requestMatchers(HttpMethod.POST, "/search").authenticated() // Acesso autenticado para busca
                             .requestMatchers(HttpMethod.GET, "/view/**").authenticated() // Acesso autenticado à visualização
+                            .requestMatchers(HttpMethod.GET, "/storage/**").authenticated()
+                            .requestMatchers(HttpMethod.GET, "/download/**").authenticated()
+                            .requestMatchers("/success", "/error").permitAll()
+
                             .anyRequest().authenticated()) // Qualquer outra requisição também precisa de autenticação
                     .headers(headers -> headers.frameOptions().sameOrigin()) // Permite o H2 console no mesmo domínio
                     .addFilterBefore(securityFilter, UsernamePasswordAuthenticationFilter.class) // Adiciona o filtro de segurança antes do filtro de autenticação padrão

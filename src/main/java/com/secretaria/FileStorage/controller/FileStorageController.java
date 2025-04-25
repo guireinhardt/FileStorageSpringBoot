@@ -1,6 +1,8 @@
 package com.secretaria.FileStorage.controller;
 
 import com.secretaria.FileStorage.service.FileStorageService;
+import com.secretaria.FileStorage.utils.FileValidator;
+import com.secretaria.FileStorage.vo.FileResponseVO;
 import com.secretaria.FileStorage.vo.UploadFileResponseVO;
 import com.secretaria.FileStorage.service.FileListService;
 import jakarta.servlet.Servlet;
@@ -22,6 +24,7 @@ import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 import org.springframework.web.util.UriUtils;
 
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -39,7 +42,7 @@ public class FileStorageController {
     @Autowired
     private FileListService fileListService;
 
-    @PostMapping("/uploadFiles")
+    /* @PostMapping("/uploadFiles")
     public String uploadFiles(@RequestParam(value = "file", required = false) MultipartFile file,
                               @RequestParam(value = "files", required = false) MultipartFile[] files,
                               @RequestParam("folderPath") String folderPath) throws Exception {
@@ -82,9 +85,68 @@ public class FileStorageController {
             responses.add(new UploadFileResponseVO(fileName, fileDownloadUri, file.getContentType(), file.getSize()));
         }
         return responses;
+    } */
+    @PostMapping("/uploadFiles")
+    @ResponseBody
+    public ResponseEntity<String> uploadFiles(@RequestParam(value = "file", required = false) MultipartFile file,
+                                              @RequestParam(value = "files", required = false) MultipartFile[] files,
+                                              @RequestParam("folderPath") String folderPath) throws Exception {
+        String message;
+
+        if (file != null && !file.isEmpty()) {
+            // Verifica se o arquivo é válido com base no tipo MIME
+            if (!FileValidator.isValidFile(file)) {
+                return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                        .body("Tipo de arquivo não permitido.");
+            }
+
+            // Lógica para upload de um único arquivo
+            UploadFileResponseVO response = uploadSingleFile(file, folderPath);
+            message = "Arquivo enviado com sucesso: " + response.getFileName();
+        } else if (files != null && files.length > 0) {
+            // Valida os arquivos múltiplos com base no tipo MIME
+            for (MultipartFile fileToCheck : files) {
+                if (!FileValidator.isValidFile(fileToCheck)) {
+                    return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                            .body("Tipo de arquivo não permitido.");
+                }
+            }
+
+            // Lógica para upload de múltiplos arquivos
+            List<UploadFileResponseVO> responses = uploadMultipleFiles(files, folderPath);
+            message = "Arquivos enviados com sucesso: " + responses.stream()
+                    .map(UploadFileResponseVO::getFileName)
+                    .collect(Collectors.joining(", "));
+        } else {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                    .body("Por favor, selecione um arquivo para enviar.");
+        }
+
+        // Retorna uma resposta de sucesso com código 200 OK
+        return ResponseEntity.ok(message);
     }
 
-        @GetMapping("/success")
+    private UploadFileResponseVO uploadSingleFile(MultipartFile file, String folderPath) throws Exception {
+        String fileName = fileStorageService.storeFile(file, folderPath);
+        String fileDownloadUri = ServletUriComponentsBuilder.fromCurrentContextPath()
+                .path("/downloadFile/")
+                .path(fileName)
+                .toUriString();
+
+        return new UploadFileResponseVO(fileName, fileDownloadUri, file.getContentType(), file.getSize());
+    }
+
+    private List<UploadFileResponseVO> uploadMultipleFiles(MultipartFile[] files, String folderPath) throws Exception {
+        List<UploadFileResponseVO> responses = new ArrayList<>();
+        for (MultipartFile file : files) {
+            responses.add(uploadSingleFile(file, folderPath));
+        }
+        return responses;
+    }
+
+
+
+    @GetMapping("/success")
         public String successPage(@RequestParam String message, Model model) {
             model.addAttribute("message", message);
             return "success"; // Nome do arquivo HTML sem a extensão
@@ -143,11 +205,31 @@ public class FileStorageController {
     }
 
 
-    @GetMapping("/")
+    /*@GetMapping("/")
     public List<String> listFilesAndFolders() {
         Path rootLocation = fileListService.getRootLocation(); // Obtém o diretório raiz
         return fileListService.listFilesInDirectory(Path.of(String.valueOf(rootLocation))); // Usa o FileListService para listar arquivos e pastas
+    } */
+    @GetMapping("/")
+    public List<FileResponseVO> listFilesAndFolders() {
+        Path rootLocation = fileListService.getRootLocation();  // Obtém o diretório raiz
+        List<String> fileNames = fileListService.listFilesInDirectory(Path.of(String.valueOf(rootLocation))); // Obtém os nomes dos arquivos e pastas
+
+        // Mapeia a lista de nomes de arquivos e pastas para FileResponseVO
+        List<FileResponseVO> fileResponseList = new ArrayList<>();
+        for (String fileName : fileNames) {
+            boolean isDirectory = Files.isDirectory(Path.of(fileName));  // Verifica se é diretório
+            String downloadUrl = "/storage/downloadFile/" + fileName;  // Exemplo de URL para download
+            String publicUrl = "/storage/viewFile/" + fileName;  // Exemplo de URL pública
+
+            // Cria o FileResponseVO e adiciona à lista
+            FileResponseVO fileResponseVO = new FileResponseVO(fileName, isDirectory, downloadUrl, publicUrl);
+            fileResponseList.add(fileResponseVO);
+        }
+
+        return fileResponseList;  // Retorna a lista de objetos FileResponseVO
     }
+
 }
 
 

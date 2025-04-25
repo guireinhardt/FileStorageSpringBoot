@@ -1,0 +1,39 @@
+<!-- fragments.html -->
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="styles.css"> <!-- CSS comum -->
+    <title>Fragmentos de Navegação</title>
+</head>
+<body>
+
+<!-- Fragmento para navegação de pastas -->
+<div th:fragment="folderNavigation">
+    <h3>Pastas</h3>
+    <ul>
+        <li th:each="folder : ${folders}">
+            <a href="#" class="open-folder" th:data-folder="${folder.name}" th:text="${folder.name}"></a>
+        </li>
+    </ul>
+</div>
+
+<!-- Fragmento para listagem de arquivos -->
+<div th:fragment="fileList">
+    <h3>Arquivos</h3>
+    <ul>
+        <li th:each="file : ${files}">
+            <a th:href="@{/storage/download/{fileName}(fileName=${file.name})}">
+                <i class="fas fa-file"></i> <!-- Ícone do arquivo -->
+                <span th:text="${file.name}"></span>
+            </a>
+        </li>
+    </ul>
+</div>
+
+<!-- Voltar à página inicial -->
+<a th:href="@{/}" class="back-btn">Voltar à Página Inicial</a>
+
+</body>
+</html>

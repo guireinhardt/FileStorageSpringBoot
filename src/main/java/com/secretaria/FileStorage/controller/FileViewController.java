@@ -9,6 +9,7 @@ import com.secretaria.FileStorage.service.FileSearchService;
 import com.secretaria.FileStorage.service.FileStorageService;
 import com.secretaria.FileStorage.service.FileViewService;
 import com.secretaria.FileStorage.vo.FileVO;
+import com.secretaria.FileStorage.infra.security.TokenService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.io.Resource;
 import org.springframework.core.io.UrlResource;
@@ -52,6 +53,8 @@ public class FileViewController {
     private FileSearchService fileSearchService;
     @Autowired
     private KeywordConfig keywordConfig;
+    @Autowired
+    private TokenService tokenService;
 
     private final FileViewService fileViewService;
     private final FileStorageConfig fileStorageConfig;
@@ -169,25 +172,52 @@ public class FileViewController {
 
 
     @GetMapping("/view/{fileName:.+}")
-    public ResponseEntity<Resource> serveFile(@PathVariable String fileName) {
+    public ResponseEntity<Resource> serveFile(@PathVariable String fileName,
+                                              @CookieValue(value = "authToken", required = false) String authToken) { // Busca o token no cookie
         try {
+            if (authToken == null || authToken.isEmpty()) {
+                return ResponseEntity.status(HttpStatus.FORBIDDEN).body(null);  // Retorna 403 se o token não estiver presente
+            }
+
+            // Valida o token JWT
+            String username = tokenService.validateToken(authToken);  // Usa o TokenService para validar o token
+
+            if (username == null || username.isEmpty()) {
+                return ResponseEntity.status(HttpStatus.FORBIDDEN).body(null);  // Retorna 403 se o token for inválido
+            }
+
+            // Se o token for válido, processa a requisição e serve o arquivo
             Path filePath = fileStorageConfig.getUploadDirPath().resolve(fileName).normalize();
             Resource resource = new UrlResource(filePath.toUri());
 
             if (resource.exists() && resource.isReadable()) {
-                String contentType = fileViewService.getContentType(fileName); // Chame o método do serviço
+                String contentType = fileViewService.getContentType(fileName);  // Chama o método do serviço para obter o tipo de conteúdo
 
                 return ResponseEntity.ok()
-                        .header(HttpHeaders.CONTENT_DISPOSITION, "inline; filename=\"" + resource.getFilename() + "\"") // Certifique-se de que é "inline"
-                        .contentType(MediaType.parseMediaType(contentType)) // Use o tipo de mídia retornado
+                        .header(HttpHeaders.CONTENT_DISPOSITION, "inline; filename=\"" + resource.getFilename() + "\"")
+                        .contentType(MediaType.parseMediaType(contentType))
                         .body(resource);
             } else {
-                return ResponseEntity.notFound().build();
+                return ResponseEntity.notFound().build();  // Retorna 404 caso o arquivo não seja encontrado
             }
         } catch (MalformedURLException e) {
-            return ResponseEntity.notFound().build();
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();  // Retorna 500 em caso de erro de URL
         }
     }
+    @PatchMapping("/storage/renameFile")
+    public ResponseEntity<?> renameFile(@RequestParam String oldName, @RequestParam String newName) {
+        Path sourcePath = fileStorageConfig.getUploadDirPath().resolve(oldName);
+        Path targetPath = fileStorageConfig.getUploadDirPath().resolve(newName);
+        try {
+            Files.move(sourcePath, targetPath);
+            return ResponseEntity.ok().body("Arquivo renomeado com sucesso");
+        } catch (IOException e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Erro ao renomear o arquivo");
+        }
+    }
+
+
+
 
 
     @ExceptionHandler(Exception.class)
