@@ -22,7 +22,8 @@
 <!-- Fragmento para listagem de arquivos -->
 <div th:fragment="fileList">
     <h3>Arquivos</h3>
-    <ul>
+    <!-- Exibe a lista apenas se existirem arquivos -->
+    <ul th:if="${files != null}">
         <li th:each="file : ${files}">
             <a th:href="@{/storage/download/{fileName}(fileName=${file.name})}">
                 <i class="fas fa-file"></i> <!-- Ícone do arquivo -->
@@ -30,6 +31,8 @@
             </a>
         </li>
     </ul>
+    <!-- Exibe mensagem se não houver arquivos -->
+    <p th:if="${files == null}">Nenhum arquivo encontrado.</p>
 </div>
 
 <!-- Voltar à página inicial -->

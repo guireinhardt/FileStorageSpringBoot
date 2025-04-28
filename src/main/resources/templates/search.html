@@ -2,10 +2,10 @@
 <html xmlns:th="http://www.thymeleaf.org">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Busca de Arquivos</title>
-    <link rel="stylesheet" href="/css/search.css"> <!-- Link para o arquivo CSS -->
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css"> <!-- Font Awesome -->
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="/css/search.css"> <!-- Arquivo de estilo -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
 </head>
 <body>
 <header>
@@ -17,68 +17,60 @@
 <div class="form-container">
     <form th:action="@{/search}" method="get" class="search-form">
         <h2>Busca de Arquivos</h2>
-        <!-- Campo de pesquisa -->
-        <input type="text" name="query" placeholder="Digite sua busca..." required />
 
-        <!-- Filtro por palavra-chave -->
-        <select name="keyword" id="keyword" onchange="updateSubKeywords()" required>
+        <input type="text" name="query" placeholder="Digite sua busca..." />
+
+        <select name="keyword" id="keyword" onchange="updateSubKeywords()">
             <option value="">Selecione uma palavra-chave</option>
             <option th:each="keyword : ${keywords}" th:value="${keyword}" th:text="${keyword}"></option>
         </select>
 
-        <!-- Filtro por subpalavra-chave (inicialmente escondido) -->
         <select name="subkeyword" id="subkeyword" style="display: none;">
             <option value="">Selecione uma subpalavra-chave</option>
         </select>
 
-        <!-- Filtro por cidade -->
         <select name="city">
             <option value="">Selecione uma cidade</option>
             <option th:each="city : ${cities}" th:value="${city}" th:text="${city}"></option>
         </select>
 
-        <!-- Filtro por data no formato YYYYMMDD -->
-        <input type="text" name="date" placeholder="Digite a data (YYYYMMDD)" pattern="\d{8}" maxlength="8" />
-
         <button type="submit"><i class="fas fa-search"></i> Buscar</button>
     </form>
 </div>
 
-<div class="results" th:if="${files}">
-    <h2>Resultados da Busca:</h2>
-    <ul>
-        <li th:each="file : ${files}">
-            <a th:href="@{/view/{fileName}(fileName=${file})}" target="_blank">
-                <i class="fas fa-eye"></i>
-                <span th:text="${file}"></span>
-            </a>
-        </li>
-    </ul>
+<div class="results" th:if="${files != null}">
+    <form id="bulkDownloadForm" method="post" th:action="@{/bulk-download}">
+        <h2>Resultados da Busca:</h2>
+        <div class="buttons-bar">
+            <button type="submit" class="bulk-download-btn"><i class="fas fa-download"></i> Baixar Selecionados</button>
+        </div>
+
+        <ul class="file-list">
+            <li th:each="file : ${files}">
+                <input type="checkbox" name="selectedFiles" th:value="${file}" class="file-checkbox">
+
+                <span class="file-name" th:text="${file}"></span>
+
+                <a th:href="@{/view/{fileName}(fileName=${file})}" target="_blank" title="Visualizar">
+                    <i class="fas fa-eye action-icon"></i>
+                </a>
+
+                <a th:href="@{/downloadFile/{fileName}(fileName=${file})}" title="Download">
+                    <i class="fas fa-download action-icon"></i>
+                </a>
+
+                <button type="button" onclick="shareFile([[${file}]])" class="share-btn" title="Compartilhar">
+                    <i class="fas fa-share-alt action-icon"></i>
+                </button>
+            </li>
+        </ul>
+    </form>
+
+    <div class="back-button">
+        <a href="/" class="back-link"><i class="fas fa-arrow-left"></i> Voltar ao Início</a>
+    </div>
 </div>
 
-<script>
-    const subKeywordsMap = /*[[${subkeywordsMap}]]*/ {};
-
-    function updateSubKeywords() {
-        const keyword = document.getElementById("keyword").value;
-        const subkeywordSelect = document.getElementById("subkeyword");
-
-        // Limpar opções anteriores
-        subkeywordSelect.innerHTML = '<option value="">Selecione uma subpalavra-chave</option>';
-
-        if (subKeywordsMap[keyword]) {
-            subkeywordSelect.style.display = 'inline-block';
-
-            subKeywordsMap[keyword].forEach(subkeyword => {
-                const option = document.createElement("option");
-                option.value = subkeyword;
-                option.textContent = subkeyword;
-                subkeywordSelect.appendChild(option);
-            });
-        } else {
-            subkeywordSelect.style.display = 'none';
-        }
-    }
-</script>
+<script src="/js/search.js"></script> <!-- Arquivo JS separado -->
 </body>
 </html>

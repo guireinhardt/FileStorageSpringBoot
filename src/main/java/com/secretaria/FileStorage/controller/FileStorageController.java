@@ -1,6 +1,7 @@
 package com.secretaria.FileStorage.controller;
 
 import com.secretaria.FileStorage.service.FileStorageService;
+import com.secretaria.FileStorage.utils.DeletableInputStreamResource;
 import com.secretaria.FileStorage.utils.FileValidator;
 import com.secretaria.FileStorage.vo.FileResponseVO;
 import com.secretaria.FileStorage.vo.UploadFileResponseVO;
@@ -10,6 +11,8 @@ import jakarta.servlet.http.HttpServletRequest;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.core.io.ByteArrayResource;
+import org.springframework.core.io.InputStreamResource;
 import org.springframework.core.io.Resource;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
@@ -23,6 +26,7 @@ import org.springframework.web.servlet.ModelAndView;
 import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 import org.springframework.web.util.UriUtils;
 
+import java.io.*;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -30,6 +34,8 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.stream.Collectors;
+import java.util.zip.ZipEntry;
+import java.util.zip.ZipOutputStream;
 
 @Controller
 @RequestMapping("/storage")
@@ -174,6 +180,38 @@ public class FileStorageController {
                 .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"" + resource.getFilename() + "\"")
                 .body(resource);
     }
+    @PostMapping("/bulk-download")
+    public ResponseEntity<Resource> bulkDownload(@RequestParam("selectedFiles") List<String> selectedFiles) throws IOException {
+        File tempZip = File.createTempFile("arquivos-", ".zip");
+        try (ZipOutputStream zos = new ZipOutputStream(new FileOutputStream(tempZip))) {
+
+            for (String fileName : selectedFiles) {
+                Resource resource = fileStorageService.loadFileAsResource(fileName);
+                if (resource.exists()) {
+                    zos.putNextEntry(new ZipEntry(resource.getFilename()));
+                    try (InputStream is = resource.getInputStream()) {
+                        byte[] buffer = new byte[1024];
+                        int length;
+                        while ((length = is.read(buffer)) >= 0) {
+                            zos.write(buffer, 0, length);
+                        }
+                    }
+                    zos.closeEntry();
+                }
+            }
+
+
+        Resource zipResource = new DeletableInputStreamResource(tempZip);
+
+        return ResponseEntity.ok()
+                .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"arquivos.zip\"")
+                .contentType(MediaType.APPLICATION_OCTET_STREAM)
+                .contentLength(tempZip.length())
+                .body(zipResource);
+    }
+}
+
+
     //rota para renderizar o create Folder
     @GetMapping("/createFolderForm")
     public String showCreateFolderForm() {

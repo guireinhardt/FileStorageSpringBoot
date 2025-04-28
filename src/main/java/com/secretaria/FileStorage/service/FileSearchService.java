@@ -26,19 +26,23 @@ public class FileSearchService {
     }
 
     public List<String> searchFiles(String query) throws IOException {
-        // Converte a consulta em minúsculas para comparação
         String lowerCaseQuery = query.toLowerCase();
 
-        // Usa Files.walk para percorrer o diretório e suas subpastas
         try (Stream<Path> paths = Files.walk(Paths.get(fileStorageLocation))) {
             return paths
-                    .filter(Files::isRegularFile) // Filtra apenas arquivos regulares
-                    .filter(path -> path.getFileName().toString().toLowerCase().contains(lowerCaseQuery)) // Filtra com base na consulta
-                    .map(Path::getFileName) // Obtém apenas o nome do arquivo
-                    .map(Path::toString) // Converte para String
+                    .filter(Files::isRegularFile)
+                    .filter(path -> {
+                        String fileName = path.getFileName().toString().toLowerCase();
+
+                        // Verifica se o nome do arquivo contém a consulta
+                        return fileName.contains(lowerCaseQuery);
+                    })
+                    .map(Path::getFileName)
+                    .map(Path::toString)
                     .collect(Collectors.toList());
         }
     }
+
     public List<String> searchMediaFiles(String query) throws IOException {
         // Diretório onde as imagens e vídeos estão armazenados
         Path storageDir = Path.of(fileStorageLocation);
@@ -82,6 +86,47 @@ public class FileSearchService {
         }
         return fileName.substring(lastIndexOfDot + 1);
     }
+    public List<String> searchFilesWithFilters(String query, String date) throws IOException {
+        String lowerCaseQuery = query.toLowerCase();
+        String normalizedDate = (date != null) ? date.trim() : "";
+
+        try (Stream<Path> paths = Files.walk(Paths.get(fileStorageLocation))) {
+            return paths
+                    .filter(Files::isRegularFile)
+                    .filter(path -> {
+                        String fileName = path.getFileName().toString().toLowerCase();
+
+                        // Verifica se o nome do arquivo contém a consulta
+                        boolean matchesQuery = fileName.contains(lowerCaseQuery);
+
+                        // Verifica se o nome do arquivo contém a data, se foi fornecida
+                        boolean matchesDate = true;
+                        if (!normalizedDate.isEmpty()) {
+                            matchesDate = fileName.contains(normalizedDate);
+                        }
+
+                        return matchesQuery && matchesDate;
+                    })
+                    .map(Path::getFileName)
+                    .map(Path::toString)
+                    .collect(Collectors.toList());
+        }
+    }
+
+
+    /**
+     * Método auxiliar para extrair a data do nome do arquivo.
+     * Procura 8 dígitos seguidos (ex: 20250428) no nome do arquivo.
+     */
+    private String extractDateFromFileName(String fileName) {
+        String onlyNumbers = fileName.replaceAll("[^0-9]", "");
+        if (onlyNumbers.length() >= 8) {
+            return onlyNumbers.substring(0, 8); // Pega os primeiros 8 dígitos
+        }
+        return null;
+    }
+
+
 
 
 }

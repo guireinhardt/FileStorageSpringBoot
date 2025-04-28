@@ -126,39 +126,53 @@ public class FileViewController {
         model.addAttribute("currentFolder", folderName); // Adiciona o nome da pasta atual ao modelo
         return "upload"; // Retorna o template upload.html
     }
-    // Método para a página de busca
     @GetMapping("/search")
     public String search(@RequestParam(required = false) String query,
                          @RequestParam(required = false) String keyword,
+                         @RequestParam(required = false) String subkeyword,
+                         @RequestParam(required = false) String city,
                          Model model) {
         System.out.println("Keyword selecionada: " + keyword);
+        System.out.println("Subkeyword selecionada: " + subkeyword);
+        System.out.println("Cidade selecionada: " + city);
+
         List<String> files = new ArrayList<>();
-        System.out.println("Keyword selecionada: " + keyword);
 
-        // Se a palavra-chave estiver selecionada, adicione-a à consulta
+        // Monta a query completa
+        StringBuilder fullQuery = new StringBuilder();
+        if (query != null && !query.isEmpty()) {
+            fullQuery.append(query.trim()).append(" ");
+        }
         if (keyword != null && !keyword.isEmpty()) {
-            query = (query == null ? "" : query.trim()) + " " + keyword.trim();
+            fullQuery.append(keyword.trim()).append(" ");
+        }
+        if (subkeyword != null && !subkeyword.isEmpty()) {
+            fullQuery.append(subkeyword.trim()).append(" ");
+        }
+        if (city != null && !city.isEmpty()) {
+            fullQuery.append(city.trim()).append(" ");
         }
 
-        if (query == null || query.isEmpty()) {
-            model.addAttribute("files", List.of()); // Retorna uma lista vazia se a consulta estiver vazia
-            model.addAttribute("keywords", keywordConfig.getKeywordList()); // Adiciona a lista de palavras-chave ao modelo
-            return "search"; // Retorna a página de pesquisa
+        // A busca só será realizada se o campo de pesquisa não estiver vazio
+        if (!fullQuery.toString().trim().isEmpty()) {
+            try {
+                // Realiza a busca
+                files = fileSearchService.searchFiles(fullQuery.toString().trim());
+                model.addAttribute("files", files);
+            } catch (IOException e) {
+                e.printStackTrace();
+                model.addAttribute("files", List.of());
+            }
         }
 
-        try {
-
-            // Chama o serviço para buscar arquivos com base na consulta
-            files = fileSearchService.searchFiles(query.trim()); // Use trim() para remover espaços em branco
-            model.addAttribute("files", files); // Adiciona os arquivos encontrados ao modelo
-        } catch (IOException e) {
-            e.printStackTrace();
-            model.addAttribute("files", List.of()); // Retorna uma lista vazia em caso de erro
-        }
-
-        model.addAttribute("keywords", keywordConfig.getKeywordList()); // Adiciona a lista de palavras-chave ao modelo
-        return "search"; // Nome do arquivo HTML sem a extensão
+        model.addAttribute("keywords", keywordConfig.getKeywordList());
+        return "search";
     }
+
+
+
+
+
 
     private String sanitizeFileName(String fileName) {
         // Verifica se o nome do arquivo contém caracteres inválidos
