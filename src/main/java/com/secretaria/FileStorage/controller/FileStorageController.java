@@ -18,6 +18,7 @@ import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
@@ -30,9 +31,10 @@ import java.io.*;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
+import java.nio.file.Paths;
+import java.nio.file.StandardCopyOption;
+import java.security.Principal;
+import java.util.*;
 import java.util.stream.Collectors;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipOutputStream;
@@ -180,6 +182,30 @@ public class FileStorageController {
                 .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"" + resource.getFilename() + "\"")
                 .body(resource);
     }
+    @GetMapping("/viewFile/{fileName:.+}")
+    public ResponseEntity<Resource> viewFile(@PathVariable String fileName, HttpServletRequest request) {
+        try {
+            Resource resource = fileStorageService.loadFileAsResource(fileName);
+
+            if (resource == null || !resource.exists()) {
+                return ResponseEntity.notFound().build();
+            }
+
+            String contentType = request.getServletContext().getMimeType(resource.getFile().getAbsolutePath());
+            if (contentType == null) {
+                contentType = "application/octet-stream";
+            }
+
+            return ResponseEntity.ok()
+                    .contentType(MediaType.parseMediaType(contentType))
+                    .header(HttpHeaders.CONTENT_DISPOSITION, "inline; filename=\"" + resource.getFilename() + "\"")
+                    .body(resource);
+
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+        }
+    }
+
     @PostMapping("/bulk-download")
     public ResponseEntity<Resource> bulkDownload(@RequestParam("selectedFiles") List<String> selectedFiles) throws IOException {
         File tempZip = File.createTempFile("arquivos-", ".zip");
@@ -267,6 +293,43 @@ public class FileStorageController {
 
         return fileResponseList;  // Retorna a lista de objetos FileResponseVO
     }
+    @PostMapping("/delete")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<?> deleteFileOrFolder(@RequestBody Map<String, String> requestBody) {
+        try {
+            String path = requestBody.get("path");
+            logger.info("Recebido para exclusão: " + path);  // Adicione este log
+
+            Path targetPath = Paths.get(fileStorageService.getFileStorageLocation().toString(), path);
+
+            if (Files.exists(targetPath)) {
+                if (Files.isDirectory(targetPath)) {
+                    fileStorageService.moveFolderToTrash(path);
+                } else {
+                    fileStorageService.moveFileToTrash(path);
+                }
+                return ResponseEntity.ok().body(new HashMap<String, String>() {{
+                    put("message", "Arquivo ou pasta movido(a) para a lixeira com sucesso.");
+                }});
+            } else {
+                return ResponseEntity.status(HttpStatus.NOT_FOUND).body(new HashMap<String, String>() {{
+                    put("error", "Arquivo ou pasta não encontrado(a).");
+                }});
+            }
+        } catch (Exception e) {
+            logger.error("Erro ao deletar arquivo ou pasta", e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(new HashMap<String, String>() {{
+                put("error", "Erro ao mover o arquivo ou pasta para a lixeira: " + e.getMessage());
+            }});
+        }
+    }
+
+
+    private boolean isAdmin(Principal principal) {
+        // Substitua essa verificação pelo seu controle real de usuários
+        return principal != null && principal.getName().equals("admin");
+    }
+
 
 }
 

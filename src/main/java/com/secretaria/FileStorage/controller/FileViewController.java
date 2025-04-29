@@ -35,6 +35,7 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import java.io.UnsupportedEncodingException;
 import java.net.URLEncoder;
@@ -81,10 +82,19 @@ public class FileViewController {
         List<FileVO.FileValueObject> folders = new ArrayList<>();
         List<FileVO.FileValueObject> files = new ArrayList<>();
 
+        // Nome do diretório da lixeira (ajuste conforme necessário)
+        String trashDirectory = "lixeira"; // Se sua lixeira estiver em um diretório chamado 'trash', por exemplo
+
         try (Stream<Path> paths = Files.list(rootLocation)) {
             paths.forEach(path -> {
                 String fileName = path.getFileName().toString();
                 boolean isDirectory = Files.isDirectory(path);
+
+                // Verifica se o caminho é a lixeira ou dentro da lixeira
+                if (path.toString().contains(trashDirectory)) {
+                    return; // Ignora arquivos/pastas dentro da lixeira
+                }
+
                 FileVO.FileValueObject fileItem = new FileVO.FileValueObject(fileName, isDirectory);
                 if (isDirectory) {
                     folders.add(fileItem); // Adiciona à lista de pastas
@@ -100,6 +110,7 @@ public class FileViewController {
         model.addAttribute("files", files); // Adiciona a lista de arquivos ao modelo
         return "list"; // Retorna o nome do template a ser renderizado
     }
+
     @GetMapping("/storage/openFolder/{folderName}")
     public String openFolder(@PathVariable String folderName, Model model) {
         Path folderPath = fileListService.getRootLocation().resolve(folderName); // Resolve o caminho da pasta
@@ -132,6 +143,7 @@ public class FileViewController {
                          @RequestParam(required = false) String subkeyword,
                          @RequestParam(required = false) String city,
                          Model model) {
+
         System.out.println("Keyword selecionada: " + keyword);
         System.out.println("Subkeyword selecionada: " + subkeyword);
         System.out.println("Cidade selecionada: " + city);
@@ -153,11 +165,23 @@ public class FileViewController {
             fullQuery.append(city.trim()).append(" ");
         }
 
+        // Nome do diretório da lixeira (ajuste conforme o nome real da sua pasta)
+        String trashDirectory = "lixeira";
+
         // A busca só será realizada se o campo de pesquisa não estiver vazio
         if (!fullQuery.toString().trim().isEmpty()) {
             try {
                 // Realiza a busca
                 files = fileSearchService.searchFiles(fullQuery.toString().trim());
+
+                // Filtra os arquivos que não estão dentro do diretório da lixeira
+                files = files.stream()
+                        .filter(file -> {
+                            Path filePath = Paths.get(file);
+                            return !filePath.startsWith(trashDirectory);
+                        })
+                        .collect(Collectors.toList());
+
                 model.addAttribute("files", files);
             } catch (IOException e) {
                 e.printStackTrace();
@@ -168,6 +192,8 @@ public class FileViewController {
         model.addAttribute("keywords", keywordConfig.getKeywordList());
         return "search";
     }
+
+
 
 
 

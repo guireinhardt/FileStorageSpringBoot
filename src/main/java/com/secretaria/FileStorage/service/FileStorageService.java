@@ -21,6 +21,11 @@ import org.springframework.web.multipart.MultipartFile;
 public class FileStorageService {
 
     private final Path fileStorageLocation;
+
+    public Path getFileStorageLocation() {
+        return fileStorageLocation;
+    }
+
     @Autowired
     public FileStorageService(FileStorageConfig fileStorageConfig) {
         this.fileStorageLocation = Paths.get(fileStorageConfig.getUploadDir()).toAbsolutePath().normalize();
@@ -119,4 +124,61 @@ public class FileStorageService {
             throw new FileStorageNotFoundException("File not found " + fileName, e);
         }
     }
+    //método auxiliar para excluir os arquivos recursivamente
+    private void deleteDirectoryRecursively(Path path) throws IOException {
+        Files.walk(path)
+                .sorted((a, b) -> b.compareTo(a)) // Inverte a ordem para excluir arquivos antes das pastas
+                .forEach(p -> {
+                    try {
+                        Files.deleteIfExists(p);
+                    } catch (IOException e) {
+                        throw new RuntimeException("Erro ao deletar: " + p);
+                    }
+                });
+    }
+
+    public void moveFileToTrash(String fileName) throws IOException {
+        Path sourceFile = fileStorageLocation.resolve(fileName);
+        Path trashFile = fileStorageLocation.resolve("lixeira").resolve(fileName);
+
+        if (!Files.exists(sourceFile) || Files.isDirectory(sourceFile)) {
+            throw new FileStorageNotFoundException("Arquivo não encontrado: " + fileName);
+        }
+
+        Files.createDirectories(trashFile.getParent());
+        Files.move(sourceFile, trashFile, StandardCopyOption.REPLACE_EXISTING);
+    }
+
+
+    public void moveFolderToTrash(String folderName) throws IOException {
+        Path sourceFolder = fileStorageLocation.resolve(folderName);
+        Path trashFolder = fileStorageLocation.resolve("lixeira").resolve(folderName);
+
+        if (!Files.exists(sourceFolder) || !Files.isDirectory(sourceFolder)) {
+            throw new FileStorageNotFoundException("Pasta não encontrada: " + folderName);
+        }
+
+        // Cria diretórios da lixeira, se necessário
+        Files.createDirectories(trashFolder.getParent());
+
+        // Move a pasta inteira (inclusive conteúdo)
+        Files.walk(sourceFolder)
+                .sorted((a, b) -> b.compareTo(a)) // Inverte para mover arquivos antes das pastas
+                .forEach(source -> {
+                    try {
+                        Path destination = trashFolder.resolve(sourceFolder.relativize(source));
+                        if (Files.isDirectory(source)) {
+                            Files.createDirectories(destination);
+                        } else {
+                            Files.copy(source, destination, StandardCopyOption.REPLACE_EXISTING);
+                        }
+                    } catch (IOException e) {
+                        throw new RuntimeException("Erro ao mover pasta para a lixeira: " + e.getMessage());
+                    }
+                });
+
+        // Após mover tudo, deleta a original
+        deleteDirectoryRecursively(sourceFolder);
+    }
+
 }

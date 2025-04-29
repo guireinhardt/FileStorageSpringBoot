@@ -86,5 +86,10 @@ public class UsersEntity implements UserDetails {
         this.password = password;
     }
 
+    public UsersRole getRole(){
+        return role;
+    }
+
+
 
 }

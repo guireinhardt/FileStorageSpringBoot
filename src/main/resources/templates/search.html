@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <title>Busca de Arquivos</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <link rel="stylesheet" href="/css/search.css"> <!-- Arquivo de estilo -->
+    <link rel="stylesheet" href="/css/search.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
 </head>
 <body>
@@ -20,13 +20,9 @@
 
         <input type="text" name="query" placeholder="Digite sua busca..." />
 
-        <select name="keyword" id="keyword" onchange="updateSubKeywords()">
+        <select name="keyword" id="keyword">
             <option value="">Selecione uma palavra-chave</option>
             <option th:each="keyword : ${keywords}" th:value="${keyword}" th:text="${keyword}"></option>
-        </select>
-
-        <select name="subkeyword" id="subkeyword" style="display: none;">
-            <option value="">Selecione uma subpalavra-chave</option>
         </select>
 
         <select name="city">
@@ -59,11 +55,30 @@
                     <i class="fas fa-download action-icon"></i>
                 </a>
 
-                <button type="button" onclick="shareFile([[${file}]])" class="share-btn" title="Compartilhar">
+                <button type="button"
+                        class="share-btn"
+                        th:attr="data-file=${file}"
+                        onclick="shareFileFromButton(this)"
+                        title="Compartilhar">
                     <i class="fas fa-share-alt action-icon"></i>
+                </button>
+
+                <button type="button"
+                        th:attr="data-file=${file}"
+                        onclick="renameFile(this.getAttribute('data-file'))"
+                        title="Renomear">
+                    <i class="fas fa-pen action-icon"></i>
+                </button>
+
+                <button type="button"
+                        th:attr="data-file=${file}"
+                        onclick="deleteFile(this.getAttribute('data-file'))"
+                        title="Deletar">
+                    <i class="fas fa-trash action-icon"></i>
                 </button>
             </li>
         </ul>
+
     </form>
 
     <div class="back-button">
@@ -71,6 +86,8 @@
     </div>
 </div>
 
-<script src="/js/search.js"></script> <!-- Arquivo JS separado -->
+<script src="/js/search.js"></script>
+<div id="toast" class="toast"></div>
+
 </body>
 </html>
