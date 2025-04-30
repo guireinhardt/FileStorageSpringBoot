@@ -5,7 +5,7 @@ function shareFileFromButton(button) {
     const shareUrl = `${baseUrl}/storage/viewFile/${encodeURIComponent(fileName)}`;
 
     navigator.clipboard.writeText(shareUrl).then(function () {
-        showToast(`Link copiado: <br><a href="${shareUrl}" target="_blank" style="color: #4FC3F7;">${shareUrl}</a>`);
+        showToast(`Link copiado!`);
     }, function (err) {
         showToast("Erro ao copiar link: " + err);
     });
@@ -68,7 +68,7 @@ bulkDownloadForm.addEventListener('submit', function(e) {
 function renameFile(fileName) {
     const newFileName = prompt("Digite o novo nome para o arquivo:", fileName);
     if (newFileName) {
-        fetch('/api/rename', {
+        fetch('/storage/renameFile', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',

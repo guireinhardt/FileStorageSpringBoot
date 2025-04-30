@@ -1,0 +1,186 @@
+<!DOCTYPE html>
+<html lang="pt-BR" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>Gerenciador de Arquivos</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <link rel="stylesheet" href="/css/folders.css">
+</head>
+<body>
+
+<!-- Caminho da pasta atual -->
+<input type="hidden" id="folderPath" th:value="${currentFolder}">
+
+<div class="top-bar">
+    <a href="/" class="btn-voltar"><i class="fas fa-arrow-left"></i> Voltar ao início</a>
+</div>
+
+<div class="container">
+
+    <h1>Gerenciador de Arquivos</h1>
+    <h3 th:text="'Pasta: ' + ${currentFolder}"></h3>
+
+    <!-- Botão de upload -->
+    <label class="btn-upload">
+        <i class="fas fa-upload"></i> Upload de Arquivos
+        <input type="file" multiple hidden onchange="uploadFiles(this.files)">
+    </label>
+
+    <!-- Subpastas -->
+    <h2>Pastas</h2>
+    <div class="folder-grid">
+        <a th:each="folder : ${folders}" class="folder" th:href="@{'/storage/openFolder/' + ${currentFolder} + '/' + ${folder.name}}">
+            <i class="fas fa-folder"></i>
+            <span th:text="${folder.name}"></span>
+        </a>
+    </div>
+
+    <!-- Arquivos -->
+    <h2>Arquivos</h2>
+    <table>
+        <thead>
+        <tr>
+            <th>Nome</th>
+            <th>Ações</th>
+        </tr>
+        </thead>
+        <tbody>
+        <tr th:each="file : ${files}">
+            <td th:text="${file.name}"></td>
+            <td>
+                <a href="#" class="btn-view" th:attr="data-file=${file.name}" title="Visualizar"><i class="fas fa-eye"></i></a>
+                <a href="#" class="btn-rename" th:attr="data-file=${file.name}" title="Renomear"><i class="fas fa-edit"></i></a>
+                <a href="#" class="btn-share" th:attr="data-file=${file.name}" title="Compartilhar"><i class="fas fa-share-alt"></i></a>
+                <a href="#" class="btn-download" th:attr="data-file=${file.name}" title="Download"><i class="fas fa-download"></i></a>
+            </td>
+        </tr>
+        </tbody>
+    </table>
+</div>
+
+<!-- Botão flutuante para criar pasta -->
+<button id="btnNovaPasta" class="btn-flutuante" title="Criar nova pasta">
+    <i class="fas fa-folder-plus"></i>
+</button>
+
+<!-- Modal de criação de pasta -->
+<div id="modalNovaPasta" class="modal">
+    <div class="modal-content">
+        <span class="close-btn" onclick="closeModal('modalNovaPasta')">&times;</span>
+        <h3>Criar Nova Pasta</h3>
+        <form method="post" th:action="@{/storage/createFolder}">
+            <input type="hidden" name="currentFolder" th:value="${currentFolder}">
+            <input type="text" name="folderName" placeholder="Nome da nova pasta" required>
+            <button type="submit">Criar</button>
+        </form>
+    </div>
+</div>
+
+<!-- Modal de renomear arquivo -->
+<div id="modalRenameFile" class="modal">
+    <div class="modal-content">
+        <span class="close-btn" onclick="closeModal('modalRenameFile')">&times;</span>
+        <h3>Renomear Arquivo</h3>
+        <form id="renameForm" method="post">
+            <input type="hidden" name="oldFileName" id="oldFileName">
+            <input type="text" name="newFileName" id="newFileName" placeholder="Novo nome" required>
+            <button type="submit">Renomear</button>
+        </form>
+    </div>
+</div>
+
+<!-- Toast -->
+<div class="toast" id="toast">
+    <span id="toastMessage"></span>
+    <button id="toastCloseBtn">&times;</button>
+</div>
+
+
+<script>
+    function uploadFiles(files) {
+    const folderPath = document.getElementById("folderPath").value;
+    const formData = new FormData();
+    formData.append("folderPath", folderPath);
+    for (let file of files) formData.append("files", file);
+
+    fetch("/storage/uploadFiles", {
+        method: "POST",
+        body: formData
+    }).then(response => {
+        if (!response.ok) throw new Error("Falha no upload");
+        showToast("Upload concluído");
+        location.reload();
+    }).catch(() => showToast("Erro no upload"));
+}
+
+document.getElementById("btnNovaPasta").onclick = () => {
+    document.getElementById("modalNovaPasta").style.display = "block";
+};
+
+function closeModal(id) {
+    document.getElementById(id).style.display = "none";
+}
+
+document.querySelectorAll('.btn-rename').forEach(btn => {
+    btn.onclick = (e) => {
+        e.preventDefault();
+        const file = btn.getAttribute("data-file");
+        const nameWithoutExt = file.substring(0, file.lastIndexOf('.'));
+        document.getElementById("oldFileName").value = file;
+        document.getElementById("newFileName").value = nameWithoutExt;
+        document.getElementById("modalRenameFile").style.display = "block";
+    };
+});
+
+document.getElementById("renameForm").onsubmit = (e) => {
+    e.preventDefault();
+    const oldName = document.getElementById("oldFileName").value;
+    const newName = document.getElementById("newFileName").value + oldName.substring(oldName.lastIndexOf('.'));
+
+    fetch(`/storage/renameFile?oldName=${encodeURIComponent(oldName)}&newName=${encodeURIComponent(newName)}`, {
+        method: 'PATCH'
+    }).then(response => {
+        if (response.ok) {
+            showToast("Renomeado com sucesso");
+            location.reload();
+        } else {
+            showToast("Erro ao renomear");
+        }
+    });
+};
+
+// Toast com botão de fechar
+function showToast(message, duration = 5000) {
+    const toast = document.getElementById('toast');
+    const toastMessage = document.getElementById('toastMessage');
+    const closeBtn = document.getElementById('toastCloseBtn');
+
+    toastMessage.textContent = message;
+    toast.style.display = 'flex';
+
+    const timer = setTimeout(() => {
+        toast.style.display = 'none';
+    }, duration);
+
+    closeBtn.onclick = function () {
+        clearTimeout(timer);
+        toast.style.display = 'none';
+    };
+}
+
+// Loading spinner
+function showLoading() {
+    document.getElementById('loadingSpinner').style.display = 'block';
+}
+
+function hideLoading() {
+    document.getElementById('loadingSpinner').style.display = 'none';
+}
+
+
+</script>
+<div class="loading-spinner" id="loadingSpinner" style="display:none;"></div>
+
+
+</body>
+</html>

@@ -43,42 +43,46 @@
 
         <ul class="file-list">
             <li th:each="file : ${files}">
-                <input type="checkbox" name="selectedFiles" th:value="${file}" class="file-checkbox">
+                <input type="checkbox" name="selectedFiles" th:value="${file.fullPath}" class="file-checkbox">
 
-                <span class="file-name" th:text="${file}"></span>
+                <span class="file-name" th:text="${file.name}"></span>
 
-                <a th:href="@{/view/{fileName}(fileName=${file})}" target="_blank" title="Visualizar">
+                <!-- Visualizar -->
+                <a th:href="@{/view/{fileName}(fileName=${file.name})}" target="_blank" title="Visualizar">
                     <i class="fas fa-eye action-icon"></i>
                 </a>
 
-                <a th:href="@{/downloadFile/{fileName}(fileName=${file})}" title="Download">
+                <!-- Download -->
+                <a th:href="@{/download/{fileName}(fileName=${file.name})}" title="Download">
                     <i class="fas fa-download action-icon"></i>
                 </a>
 
+                <!-- Compartilhar -->
                 <button type="button"
                         class="share-btn"
-                        th:attr="data-file=${file}"
+                        th:attr="data-file=${file.fullPath}"
                         onclick="shareFileFromButton(this)"
                         title="Compartilhar">
                     <i class="fas fa-share-alt action-icon"></i>
                 </button>
 
+                <!-- Renomear -->
                 <button type="button"
-                        th:attr="data-file=${file}"
+                        th:attr="data-file=${file.fullPath}"
                         onclick="renameFile(this.getAttribute('data-file'))"
                         title="Renomear">
                     <i class="fas fa-pen action-icon"></i>
                 </button>
 
+                <!-- Deletar -->
                 <button type="button"
-                        th:attr="data-file=${file}"
+                        th:attr="data-file=${file.fullPath}"
                         onclick="deleteFile(this.getAttribute('data-file'))"
                         title="Deletar">
                     <i class="fas fa-trash action-icon"></i>
                 </button>
             </li>
         </ul>
-
     </form>
 
     <div class="back-button">

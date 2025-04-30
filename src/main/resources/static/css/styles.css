@@ -67,7 +67,7 @@ body {
             border-bottom: 1px solid #ccc;
         }
 
-        .btn-download, .btn-view, .btn-rename {
+        .btn-download, .btn-view, .btn-rename, .btn-share {
             margin-right: 10px;
             text-decoration: none;
             color: #007bff;
@@ -199,3 +199,93 @@ body {
             margin: 0;
             padding: 0;
         }
+       .btn-flutuante {
+           position: fixed;
+           bottom: 20px;
+           right: 20px;
+           background-color: #007bff;
+           color: white;
+           border: none;
+           border-radius: 50%;
+           width: 60px;
+           height: 60px;
+           font-size: 24px;
+           cursor: pointer;
+           box-shadow: 0 4px 6px rgba(0,0,0,0.2);
+           z-index: 1000;
+       }
+
+       .btn-flutuante:hover {
+           background-color: #0056b3;
+       }
+
+       /* Modal */
+       .modal {
+           display: none;
+           position: fixed;
+           z-index: 2000;
+           left: 0; top: 0;
+           width: 100%; height: 100%;
+           background-color: rgba(0,0,0,0.5);
+       }
+
+       .modal-content {
+           background-color: #fff;
+           margin: 15% auto;
+           padding: 30px;
+           border-radius: 8px;
+           width: 90%;
+           max-width: 400px;
+           position: relative;
+       }
+
+       .modal-content input {
+           width: 100%;
+           padding: 10px;
+           margin-top: 15px;
+           margin-bottom: 15px;
+       }
+
+       .modal-content button {
+           padding: 10px 20px;
+           background-color: #007bff;
+           color: white;
+           border: none;
+           cursor: pointer;
+           border-radius: 4px;
+       }
+
+       .modal-content button:hover {
+           background-color: #0056b3;
+       }
+
+       .close-btn {
+           position: absolute;
+           top: 10px; right: 15px;
+           font-size: 20px;
+           cursor: pointer;
+       }
+       .toast {
+           visibility: hidden;
+           min-width: 250px;
+           margin-left: -125px;
+           background-color: #333;
+           color: #fff;
+           text-align: center;
+           border-radius: 4px;
+           padding: 16px;
+           position: fixed;
+           z-index: 9999;
+           left: 50%;
+           bottom: 30px;
+           font-size: 14px;
+           opacity: 0;
+           transition: opacity 0.5s, bottom 0.5s;
+       }
+       .toast.show {
+           visibility: visible;
+           opacity: 1;
+           bottom: 50px;
+       }
+
+

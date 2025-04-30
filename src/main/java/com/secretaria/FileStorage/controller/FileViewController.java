@@ -2,6 +2,7 @@ package com.secretaria.FileStorage.controller;
 
 import com.secretaria.FileStorage.config.FileStorageConfig;
 import com.secretaria.FileStorage.config.KeywordConfig;
+import com.secretaria.FileStorage.dto.FileResultDTO;
 import com.secretaria.FileStorage.exception.FileStorageException;
 import com.secretaria.FileStorage.exception.FileStorageNotFoundException;
 import com.secretaria.FileStorage.service.FileListService;
@@ -10,6 +11,7 @@ import com.secretaria.FileStorage.service.FileStorageService;
 import com.secretaria.FileStorage.service.FileViewService;
 import com.secretaria.FileStorage.vo.FileVO;
 import com.secretaria.FileStorage.infra.security.TokenService;
+import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.io.Resource;
 import org.springframework.core.io.UrlResource;
@@ -23,6 +25,7 @@ import org.springframework.util.StringUtils;
 import org.springframework.web.bind.ServletRequestParameterPropertyValues;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
+import org.springframework.web.servlet.HandlerMapping;
 
 
 import java.io.File;
@@ -111,9 +114,13 @@ public class FileViewController {
         return "list"; // Retorna o nome do template a ser renderizado
     }
 
-    @GetMapping("/storage/openFolder/{folderName}")
-    public String openFolder(@PathVariable String folderName, Model model) {
-        Path folderPath = fileListService.getRootLocation().resolve(folderName); // Resolve o caminho da pasta
+    @GetMapping("/storage/openFolder/**")
+    public String openFolder(HttpServletRequest request, Model model) {
+        // Extrai o caminho da pasta após /storage/openFolder/
+        String fullPath = (String) request.getAttribute(HandlerMapping.PATH_WITHIN_HANDLER_MAPPING_ATTRIBUTE);
+        String folderRelativePath = fullPath.replace("/storage/openFolder/", ""); // exemplo: pasta1/subpasta2
+
+        Path folderPath = fileListService.getRootLocation().resolve(folderRelativePath);
         List<FileVO.FileValueObject> folders = new ArrayList<>();
         List<FileVO.FileValueObject> files = new ArrayList<>();
 
@@ -123,20 +130,22 @@ public class FileViewController {
                 boolean isDirectory = Files.isDirectory(path);
                 FileVO.FileValueObject fileItem = new FileVO.FileValueObject(fileName, isDirectory);
                 if (isDirectory) {
-                    folders.add(fileItem); // Adiciona à lista de subpastas
+                    folders.add(fileItem);
                 } else {
-                    files.add(fileItem); // Adiciona à lista de arquivos
+                    files.add(fileItem);
                 }
             });
         } catch (IOException e) {
             throw new FileStorageException("Erro ao listar arquivos e pastas", e);
         }
 
-        model.addAttribute("folders", folders); // Adiciona a lista de subpastas ao modelo
-        model.addAttribute("files", files); // Adiciona a lista de arquivos ao modelo
-        model.addAttribute("currentFolder", folderName); // Adiciona o nome da pasta atual ao modelo
-        return "upload"; // Retorna o template upload.html
+        model.addAttribute("folders", folders);
+        model.addAttribute("files", files);
+        model.addAttribute("currentFolder", folderRelativePath); // para uso no HTML (upload, breadcrumb, etc.)
+
+        return "folderView"; // use o nome correto do HTML personalizado
     }
+
     @GetMapping("/search")
     public String search(@RequestParam(required = false) String query,
                          @RequestParam(required = false) String keyword,
@@ -148,7 +157,7 @@ public class FileViewController {
         System.out.println("Subkeyword selecionada: " + subkeyword);
         System.out.println("Cidade selecionada: " + city);
 
-        List<String> files = new ArrayList<>();
+        List<FileResultDTO> files = new ArrayList<>();
 
         // Monta a query completa
         StringBuilder fullQuery = new StringBuilder();
@@ -165,22 +174,11 @@ public class FileViewController {
             fullQuery.append(city.trim()).append(" ");
         }
 
-        // Nome do diretório da lixeira (ajuste conforme o nome real da sua pasta)
-        String trashDirectory = "lixeira";
-
         // A busca só será realizada se o campo de pesquisa não estiver vazio
         if (!fullQuery.toString().trim().isEmpty()) {
             try {
-                // Realiza a busca
+                // Realiza a busca (agora já sem arquivos da lixeira)
                 files = fileSearchService.searchFiles(fullQuery.toString().trim());
-
-                // Filtra os arquivos que não estão dentro do diretório da lixeira
-                files = files.stream()
-                        .filter(file -> {
-                            Path filePath = Paths.get(file);
-                            return !filePath.startsWith(trashDirectory);
-                        })
-                        .collect(Collectors.toList());
 
                 model.addAttribute("files", files);
             } catch (IOException e) {
@@ -192,6 +190,8 @@ public class FileViewController {
         model.addAttribute("keywords", keywordConfig.getKeywordList());
         return "search";
     }
+
+
 
 
 

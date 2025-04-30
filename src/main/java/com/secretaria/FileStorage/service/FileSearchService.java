@@ -1,6 +1,7 @@
 package com.secretaria.FileStorage.service;
 
 import com.secretaria.FileStorage.config.FileStorageConfig;
+import com.secretaria.FileStorage.dto.FileResultDTO;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -25,23 +26,36 @@ public class FileSearchService {
         this.fileStorageLocation = fileStorageConfig.getUploadDir();
     }
 
-    public List<String> searchFiles(String query) throws IOException {
+    public List<FileResultDTO> searchFiles(String query) throws IOException {
         String lowerCaseQuery = query.toLowerCase();
 
         try (Stream<Path> paths = Files.walk(Paths.get(fileStorageLocation))) {
             return paths
                     .filter(Files::isRegularFile)
+                    // Ignora arquivos na lixeira
+                    .filter(path -> {
+                        for (Path part : path) {
+                            if (part.toString().equalsIgnoreCase("lixeira")) {
+                                return false;
+                            }
+                        }
+                        return true;
+                    })
+                    // Filtra por nome
                     .filter(path -> {
                         String fileName = path.getFileName().toString().toLowerCase();
-
-                        // Verifica se o nome do arquivo contém a consulta
                         return fileName.contains(lowerCaseQuery);
                     })
-                    .map(Path::getFileName)
-                    .map(Path::toString)
+                    // Cria o DTO com nome e caminho completo
+                    .map(path -> new FileResultDTO(
+                            path.getFileName().toString(),
+                            path.toString()
+                    ))
                     .collect(Collectors.toList());
         }
     }
+
+
 
     public List<String> searchMediaFiles(String query) throws IOException {
         // Diretório onde as imagens e vídeos estão armazenados
