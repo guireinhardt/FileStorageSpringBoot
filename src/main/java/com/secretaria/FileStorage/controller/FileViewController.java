@@ -32,11 +32,13 @@ import java.io.File;
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
 import java.net.MalformedURLException;
+import java.net.URLDecoder;
 import java.net.URLEncoder;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -81,7 +83,6 @@ public class FileViewController {
     @GetMapping("/")
     public String listFilesAndFolders(Model model) {
         Path rootLocation = fileListService.getRootLocation(); // Obtém o diretório raiz
-        List<FileVO.FileValueObject> fileItems = new ArrayList<>();
         List<FileVO.FileValueObject> folders = new ArrayList<>();
         List<FileVO.FileValueObject> files = new ArrayList<>();
 
@@ -98,7 +99,10 @@ public class FileViewController {
                     return; // Ignora arquivos/pastas dentro da lixeira
                 }
 
+                // Cria o objeto de valor para o arquivo/pasta
                 FileVO.FileValueObject fileItem = new FileVO.FileValueObject(fileName, isDirectory);
+
+                // Adiciona o item na lista de pastas ou arquivos
                 if (isDirectory) {
                     folders.add(fileItem); // Adiciona à lista de pastas
                 } else {
@@ -106,20 +110,34 @@ public class FileViewController {
                 }
             });
         } catch (IOException e) {
+
             throw new FileStorageException("Erro ao listar arquivos e pastas", e);
         }
 
-        model.addAttribute("folders", folders); // Adiciona a lista de pastas ao modelo
-        model.addAttribute("files", files); // Adiciona a lista de arquivos ao modelo
+        // Adiciona as listas de pastas e arquivos no modelo
+        model.addAttribute("folders", folders); // Pastas
+        model.addAttribute("files", files); // Arquivos
+
         return "list"; // Retorna o nome do template a ser renderizado
     }
 
+
     @GetMapping("/storage/openFolder/**")
-    public String openFolder(HttpServletRequest request, Model model) {
+    public String openFolder(HttpServletRequest request, Model model) throws UnsupportedEncodingException {
         // Extrai o caminho da pasta após /storage/openFolder/
         String fullPath = (String) request.getAttribute(HandlerMapping.PATH_WITHIN_HANDLER_MAPPING_ATTRIBUTE);
-        String folderRelativePath = fullPath.replace("/storage/openFolder/", ""); // exemplo: pasta1/subpasta2
+        String folderRelativePath = fullPath.replace("/storage/openFolder/", "");
 
+        // Decodifica o caminho da pasta
+        folderRelativePath = URLDecoder.decode(folderRelativePath, "UTF-8");
+
+        // Divide o caminho da pasta em partes
+        String[] folderParts = folderRelativePath.split("/");
+
+        // Define a pasta anterior (caso contrário, será "Início")
+        String parentFolder = (folderParts.length > 1) ? String.join("/", Arrays.copyOfRange(folderParts, 0, folderParts.length - 1)) : "";
+
+        // Resolve o caminho completo da pasta
         Path folderPath = fileListService.getRootLocation().resolve(folderRelativePath);
         List<FileVO.FileValueObject> folders = new ArrayList<>();
         List<FileVO.FileValueObject> files = new ArrayList<>();
@@ -139,12 +157,20 @@ public class FileViewController {
             throw new FileStorageException("Erro ao listar arquivos e pastas", e);
         }
 
+        // Passa as informações para o template
+        model.addAttribute("folderParts", folderParts);
         model.addAttribute("folders", folders);
         model.addAttribute("files", files);
-        model.addAttribute("currentFolder", folderRelativePath); // para uso no HTML (upload, breadcrumb, etc.)
+        model.addAttribute("currentFolder", folderRelativePath);
+        model.addAttribute("parentFolder", parentFolder);  // Adiciona a pasta anterior
 
-        return "folderView"; // use o nome correto do HTML personalizado
+        return "folderView"; // Retorna para o template correto
     }
+
+
+
+
+
 
     @GetMapping("/search")
     public String search(@RequestParam(required = false) String query,

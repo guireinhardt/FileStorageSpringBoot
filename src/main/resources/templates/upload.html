@@ -1,59 +1,165 @@
 <!DOCTYPE html>
-<html xmlns:th="http://www.thymeleaf.org">
+<html lang="pt-BR">
 <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Upload de Arquivos</title>
-    <link rel="stylesheet" href="/css/styles.css"> <!-- Reutiliza o CSS -->
+    <link rel="stylesheet" href="/css/upload.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
 </head>
 <body>
 
-<h1>Upload de Arquivos</h1>
+<div class="container">
+    <!-- Botão para retornar à página principal -->
+    <a href="/" class="btn-inicio">
+        <i class="fas fa-home"></i> Início
+    </a>
 
-<form action="/storage/uploadFiles" method="post" enctype="multipart/form-data">
-    <input type="text" name="folderPath" th:value="${currentFolder}" hidden>
-    <label for="file">Selecione um arquivo para upload:</label>
-    <input type="file" name="file">
-    <button type="submit">Enviar</button>
-</form>
+    <h1>Upload de Arquivos</h1>
 
-<!-- Incluir Fragmentos -->
-<div th:replace="fragments :: folderNavigation"></div>
-<div th:replace="fragments :: fileList"></div>
+    <div class="upload-area">
+        <form action="/storage/uploadFiles" method="post" enctype="multipart/form-data" id="uploadForm">
+            <input type="hidden" name="folderPath" id="folderPath" value="${currentFolder}">
+
+            <!-- Seleção de pasta -->
+            <div class="folder-selection">
+                <label for="folderSelect">Escolha a pasta de destino:</label>
+                <select name="folderSelect" id="folderSelect">
+                    <!-- As opções de pastas serão carregadas dinamicamente aqui -->
+                </select>
+            </div>
+
+            <!-- Área de upload com drag and drop -->
+            <div class="upload-box">
+                <input type="file" name="file" id="fileInput" class="file-input" multiple>
+                <label for="fileInput" class="file-label">
+                    <i class="fas fa-cloud-upload-alt"></i> Arraste ou clique para selecionar arquivos
+                </label>
+                <div id="fileList" class="file-list"></div>
+            </div>
+
+            <button type="submit" id="uploadButton" class="btn">Enviar</button>
+        </form>
+    </div>
+
+    <!-- Toast para mensagens de sucesso ou erro -->
+    <div id="toast" class="toast"></div>
+</div>
 
 <script>
-    // Função para obter o token JWT (aqui você pode pegar de onde for necessário, ex: localStorage, cookie, etc.)
+    // Função para obter o token JWT
     function getToken() {
-        return localStorage.getItem('jwtToken'); // Exemplo, você pode adaptar conforme seu caso
+        return localStorage.getItem('jwtToken'); // Adapte conforme necessário
     }
 
-    // Adiciona o evento de clique nos links das pastas
-    document.querySelectorAll('.open-folder').forEach(link => {
-        link.addEventListener('click', function(event) {
-            event.preventDefault();
+    // Função para exibir mensagens de Toast
+    function showToast(message) {
+        const toast = document.getElementById('toast');
+        toast.textContent = message;
+        toast.classList.add('show');
+        setTimeout(() => {
+            toast.classList.remove('show');
+        }, 3000);
+    }
 
-            const folderName = this.getAttribute('data-folder');
-            const token = getToken();
+    // Função para carregar as pastas dinamicamente
+    function loadFolders() {
+        const token = getToken();
+        const folderSelect = document.getElementById('folderSelect');
 
-            if (token) {
-                fetch(`/storage/openFolder/${folderName}`, {
-                    method: 'GET',
-                    headers: {
-                        'Authorization': 'Bearer ' + token
-                    }
-                })
-                .then(response => response.json())  // ou outro formato, dependendo da resposta
-                .then(data => {
-                    // Lidar com a resposta
-                    console.log(data);
-                    // Talvez você queira atualizar o conteúdo da página com os arquivos da pasta, por exemplo
-                })
-                .catch(error => {
-                    console.error('Erro ao abrir a pasta:', error);
+        if (token) {
+            fetch('/storage/folders', {
+                method: 'GET',
+                headers: {
+                    'Authorization': 'Bearer ' + token
+                }
+            })
+            .then(response => response.json())
+            .then(folders => {
+                folderSelect.innerHTML = ''; // Limpa as opções atuais
+                folders.forEach(folder => {
+                    const option = document.createElement('option');
+                    option.value = folder;
+                    option.textContent = folder;
+                    folderSelect.appendChild(option);
                 });
-            } else {
-                console.error('Token JWT não encontrado');
-            }
-        });
+            })
+            .catch(error => {
+                console.error('Erro ao carregar pastas:', error);
+                showToast('Erro ao carregar pastas.');
+            });
+        } else {
+            console.error('Token JWT não encontrado');
+            showToast('Token JWT não encontrado.');
+        }
+    }
+
+    // Função para lidar com o drag and drop e seleção de arquivos
+    const uploadBox = document.querySelector('.upload-box');
+    const fileInput = document.getElementById('fileInput');
+    const fileListContainer = document.getElementById('fileList');
+
+    uploadBox.addEventListener('dragover', (e) => {
+        e.preventDefault();
+        uploadBox.classList.add('drag-over');
     });
+
+    uploadBox.addEventListener('dragleave', () => {
+        uploadBox.classList.remove('drag-over');
+    });
+
+    uploadBox.addEventListener('drop', (e) => {
+        e.preventDefault();
+        uploadBox.classList.remove('drag-over');
+        const files = e.dataTransfer.files;
+        handleFiles(files);
+    });
+
+    fileInput.addEventListener('change', (e) => {
+        const files = e.target.files;
+        handleFiles(files);
+    });
+
+    function handleFiles(files) {
+        const fileList = Array.from(files);
+        fileListContainer.innerHTML = '';
+        fileList.forEach(file => {
+            const fileElement = document.createElement('div');
+            fileElement.classList.add('file-item');
+            fileElement.textContent = file.name;
+            fileListContainer.appendChild(fileElement);
+        });
+    }
+
+    // Manipulando o envio de formulário
+    document.getElementById('uploadForm').addEventListener('submit', (e) => {
+        e.preventDefault();
+        const formData = new FormData(e.target);
+        const token = getToken();
+        if (token) {
+            fetch(e.target.action, {
+                method: 'POST',
+                headers: {
+                    'Authorization': 'Bearer ' + token
+                },
+                body: formData
+            })
+            .then(response => response.json())
+            .then(data => {
+                showToast('Upload concluído com sucesso!');
+            })
+            .catch(error => {
+                console.error('Erro no upload:', error);
+                showToast('Erro ao fazer upload.');
+            });
+        } else {
+            console.error('Token JWT não encontrado');
+            showToast('Token JWT não encontrado.');
+        }
+    });
+
+    // Carregar pastas ao carregar a página
+    window.onload = loadFolders;
 </script>
 
 </body>

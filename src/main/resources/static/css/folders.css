@@ -181,30 +181,33 @@ td i:hover {
     background-color: #0056b3;
 }
 
+/* Para o botão de fechar dentro do modal */
 .close-btn {
     position: absolute;
-    right: 20px;
-    top: 15px;
-    font-size: 24px;
+    top: 10px;
+    right: 10px;
+    background: none;
+    border: none;
+    font-size: 20px;
     cursor: pointer;
+    color: #000;
 }
 
+/* Estilo do toast */
 .toast {
-  display: none;
-  position: fixed;
-  bottom: 30px;
-  right: 30px;
-  background-color: #333;
-  color: #fff;
-  padding: 16px 24px;
-  border-radius: 8px;
-  box-shadow: 0 0 10px rgba(0,0,0,0.3);
-  z-index: 9999;
-  font-size: 14px;
-  max-width: 300px;
-  justify-content: space-between;
-  align-items: center;
+    display: none;
+    position: fixed;
+    bottom: 20px;
+    left: 50%;
+    transform: translateX(-50%);
+    background-color: rgba(0, 0, 0, 0.8);
+    color: white;
+    padding: 15px;
+    border-radius: 5px;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    font-size: 16px;
 }
+
 
 .toast button {
   background: transparent;
@@ -233,3 +236,25 @@ td i:hover {
     0% { transform: translate(-50%, -50%) rotate(0deg); }
     100% { transform: translate(-50%, -50%) rotate(360deg); }
 }
+/* Estilo do botão Voltar */
+.btn-voltar {
+    display: inline-flex;
+    align-items: center;
+    padding: 10px 15px;
+    font-size: 16px;
+    background-color: #007BFF;
+    color: white;
+    border-radius: 4px;
+    text-decoration: none;
+    transition: background-color 0.3s;
+}
+
+.btn-voltar:hover {
+    background-color: #0056b3;
+}
+
+.btn-voltar i {
+    margin-right: 8px;
+}
+
+

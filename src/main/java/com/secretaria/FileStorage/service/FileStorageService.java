@@ -94,19 +94,38 @@ public class FileStorageService {
             throw new FileStorageNotFoundException("File not found " + fileName,e );
         }
     } */
-    public boolean createFolder(String folderName) {
+    public boolean createFolder(String relativePath) {
         try {
-            File folder = new File(fileStorageLocation + File.separator + folderName);
+            // Substitui todas as barras invertidas (\) por barras normais (/)
+            relativePath = relativePath.replace("\\", "/");
+
+            // Resolve o caminho da pasta e garante que ele seja normalizado
+            Path fullPath = fileStorageLocation.resolve(relativePath).normalize();
+
+            // Protege contra ataques de path traversal (evita que o usuário suba pastas com "../")
+            if (!fullPath.startsWith(fileStorageLocation)) {
+                throw new FileStorageException("Caminho inválido.");
+            }
+
+            // Validação do nome da pasta (evita caracteres inválidos para o sistema)
+            if (relativePath.matches(".*[<>:\"\\|?*].*")) {
+                throw new FileStorageException("O nome da pasta contém caracteres inválidos.");
+            }
+
+            // Cria o diretório e seus diretórios intermediários
+            File folder = fullPath.toFile();
             if (!folder.exists()) {
-                return folder.mkdirs(); // Cria a pasta e todas as pastas necessárias
+                return Files.createDirectories(fullPath) != null;  // Cria a pasta e seus diretórios intermediários
             } else {
-                return false; // A pasta já existe
+                return false;  // A pasta já existe
             }
         } catch (Exception e) {
-            // Log de erro
-            return false;
+            throw new FileStorageException("Erro ao criar a pasta '" + relativePath + "': " + e.getMessage(), e);
         }
     }
+
+
+
     public Resource loadFileAsResource(String fileName) {
         try {
             // Resolve o caminho do arquivo a partir do diretório base

@@ -24,6 +24,7 @@ import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.servlet.ModelAndView;
+import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 import org.springframework.web.util.UriUtils;
 
@@ -255,18 +256,40 @@ public class FileStorageController {
                     .body("Essa pasta já existe:  " + folderName);
         }
     } */
-    public ModelAndView createFolder(@RequestParam("folderName") String folderName) {
-        boolean isCreated = fileStorageService.createFolder(folderName);
-        ModelAndView modelAndView = new ModelAndView("folderResult"); // Nome do template HTML
+    public String createFolder(
+            @RequestParam("folderName") String folderName,
+            @RequestParam(value = "currentFolder", required = false) String currentFolder,
+            RedirectAttributes redirectAttributes
+    ) {
+        // Substitui as barras invertidas por barras normais para garantir que o caminho esteja correto
+        folderName = folderName.replace("\\", "/");
 
+        // Se o currentFolder não for nulo, adiciona o caminho relativo
+        String relativePath = (currentFolder == null || currentFolder.isEmpty())
+                ? folderName
+                : currentFolder + File.separator + folderName;
+
+        // Normaliza o caminho para garantir que ele esteja correto
+        relativePath = relativePath.replace("\\", "/"); // Troca barras invertidas por barras normais
+
+        boolean isCreated = fileStorageService.createFolder(relativePath);
+
+        // Define o caminho de redirecionamento
+        String redirectPath = (currentFolder != null && !currentFolder.isEmpty())
+                ? "/storage/openFolder/" + currentFolder
+                : "/";
+
+        // Mensagem de sucesso ou erro ao criar a pasta
         if (isCreated) {
-            modelAndView.addObject("message", "Pasta criada com sucesso: " + folderName);
+            redirectAttributes.addFlashAttribute("toastMessage", "Pasta criada com sucesso!");
         } else {
-            modelAndView.addObject("message", "Essa pasta já existe: " + folderName);
+            redirectAttributes.addFlashAttribute("toastMessage", "Essa pasta já existe.");
         }
 
-        return modelAndView;
+        // Redireciona para a página da pasta ou à raiz
+        return "redirect:" + redirectPath;
     }
+
 
 
     /*@GetMapping("/")

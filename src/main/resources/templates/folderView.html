@@ -8,16 +8,20 @@
 </head>
 <body>
 
-<!-- Caminho da pasta atual -->
-<input type="hidden" id="folderPath" th:value="${currentFolder}">
-
+<!-- Caminho da pasta anterior com o link para voltar -->
 <div class="top-bar">
-    <a href="/" class="btn-voltar"><i class="fas fa-arrow-left"></i> Voltar ao início</a>
+    <a th:href="@{${parentFolder != '' ? '/storage/openFolder/' + parentFolder : '/'}}"
+       class="btn-voltar">
+        <i class="fas fa-arrow-left"></i>
+        <span th:text="${parentFolder != '' ? 'Voltar para: ' + parentFolder : 'Voltar ao início'}"></span>
+    </a>
 </div>
 
 <div class="container">
 
     <h1>Gerenciador de Arquivos</h1>
+
+    <!-- Título da pasta atual -->
     <h3 th:text="'Pasta: ' + ${currentFolder}"></h3>
 
     <!-- Botão de upload -->
@@ -64,10 +68,13 @@
 </button>
 
 <!-- Modal de criação de pasta -->
-<div id="modalNovaPasta" class="modal">
+<div id="modalNovaPasta" class="modal" style="display:none;">
     <div class="modal-content">
-        <span class="close-btn" onclick="closeModal('modalNovaPasta')">&times;</span>
         <h3>Criar Nova Pasta</h3>
+        <!-- Botão de fechar dentro do form -->
+        <button class="close-btn" onclick="closeModal('modalNovaPasta')">
+            <i class="fas fa-times"></i>
+        </button>
         <form method="post" th:action="@{/storage/createFolder}">
             <input type="hidden" name="currentFolder" th:value="${currentFolder}">
             <input type="text" name="folderName" placeholder="Nome da nova pasta" required>
@@ -77,10 +84,13 @@
 </div>
 
 <!-- Modal de renomear arquivo -->
-<div id="modalRenameFile" class="modal">
+<div id="modalRenameFile" class="modal" style="display:none;">
     <div class="modal-content">
-        <span class="close-btn" onclick="closeModal('modalRenameFile')">&times;</span>
         <h3>Renomear Arquivo</h3>
+        <!-- Botão de fechar dentro do form -->
+        <button class="close-btn" onclick="closeModal('modalRenameFile')">
+            <i class="fas fa-times"></i>
+        </button>
         <form id="renameForm" method="post">
             <input type="hidden" name="oldFileName" id="oldFileName">
             <input type="text" name="newFileName" id="newFileName" placeholder="Novo nome" required>
@@ -92,95 +102,63 @@
 <!-- Toast -->
 <div class="toast" id="toast">
     <span id="toastMessage"></span>
-    <button id="toastCloseBtn">&times;</button>
+    <!-- Removido o botão X do Toast -->
 </div>
 
-
 <script>
+    // Função de upload de arquivos
     function uploadFiles(files) {
-    const folderPath = document.getElementById("folderPath").value;
-    const formData = new FormData();
-    formData.append("folderPath", folderPath);
-    for (let file of files) formData.append("files", file);
+        const folderPath = document.getElementById("folderPath").value;
+        const formData = new FormData();
+        formData.append("folderPath", folderPath);
+        for (let file of files) formData.append("files", file);
 
-    fetch("/storage/uploadFiles", {
-        method: "POST",
-        body: formData
-    }).then(response => {
-        if (!response.ok) throw new Error("Falha no upload");
-        showToast("Upload concluído");
-        location.reload();
-    }).catch(() => showToast("Erro no upload"));
-}
-
-document.getElementById("btnNovaPasta").onclick = () => {
-    document.getElementById("modalNovaPasta").style.display = "block";
-};
-
-function closeModal(id) {
-    document.getElementById(id).style.display = "none";
-}
-
-document.querySelectorAll('.btn-rename').forEach(btn => {
-    btn.onclick = (e) => {
-        e.preventDefault();
-        const file = btn.getAttribute("data-file");
-        const nameWithoutExt = file.substring(0, file.lastIndexOf('.'));
-        document.getElementById("oldFileName").value = file;
-        document.getElementById("newFileName").value = nameWithoutExt;
-        document.getElementById("modalRenameFile").style.display = "block";
-    };
-});
-
-document.getElementById("renameForm").onsubmit = (e) => {
-    e.preventDefault();
-    const oldName = document.getElementById("oldFileName").value;
-    const newName = document.getElementById("newFileName").value + oldName.substring(oldName.lastIndexOf('.'));
-
-    fetch(`/storage/renameFile?oldName=${encodeURIComponent(oldName)}&newName=${encodeURIComponent(newName)}`, {
-        method: 'PATCH'
-    }).then(response => {
-        if (response.ok) {
-            showToast("Renomeado com sucesso");
+        fetch("/storage/uploadFiles", {
+            method: "POST",
+            body: formData
+        }).then(response => {
+            if (!response.ok) throw new Error("Falha no upload");
+            showToast("Upload concluído");
             location.reload();
-        } else {
-            showToast("Erro ao renomear");
-        }
-    });
-};
+        }).catch(() => showToast("Erro no upload"));
+    }
 
-// Toast com botão de fechar
-function showToast(message, duration = 5000) {
-    const toast = document.getElementById('toast');
-    const toastMessage = document.getElementById('toastMessage');
-    const closeBtn = document.getElementById('toastCloseBtn');
-
-    toastMessage.textContent = message;
-    toast.style.display = 'flex';
-
-    const timer = setTimeout(() => {
-        toast.style.display = 'none';
-    }, duration);
-
-    closeBtn.onclick = function () {
-        clearTimeout(timer);
-        toast.style.display = 'none';
+    // Função para abrir o modal
+    document.getElementById('btnNovaPasta').onclick = function() {
+        document.getElementById('modalNovaPasta').style.display = "block";
     };
-}
 
-// Loading spinner
-function showLoading() {
-    document.getElementById('loadingSpinner').style.display = 'block';
-}
+    // Função para fechar o modal
+    function closeModal(id) {
+        document.getElementById(id).style.display = "none";
+    }
 
-function hideLoading() {
-    document.getElementById('loadingSpinner').style.display = 'none';
-}
+    document.querySelectorAll('.btn-rename').forEach(btn => {
+        btn.onclick = (e) => {
+            e.preventDefault();
+            const file = btn.getAttribute("data-file");
+            const nameWithoutExt = file.substring(0, file.lastIndexOf('.'));
+            document.getElementById("oldFileName").value = file;
+            document.getElementById("newFileName").value = nameWithoutExt;
+            document.getElementById("modalRenameFile").style.display = "block";
+        };
+    });
 
+    // Função para exibir o toast de sucesso
+    function showToast(message, duration = 5000) {
+        const toast = document.getElementById('toast');
+        const toastMessage = document.getElementById('toastMessage');
 
+        toastMessage.textContent = message;
+        toast.style.display = 'flex';
+
+        const timer = setTimeout(() => {
+            toast.style.display = 'none';
+        }, duration);
+    }
 </script>
-<div class="loading-spinner" id="loadingSpinner" style="display:none;"></div>
 
+<div class="loading-spinner" id="loadingSpinner" style="display:none;"></div>
 
 </body>
 </html>
