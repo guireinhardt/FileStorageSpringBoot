@@ -13,13 +13,24 @@
 <input type="hidden" id="folderPath" th:value="${currentFolder}">
 
 <div class="navbar">
-    <img src="/images/agri_.png" alt="Logo" style="height:40px; vertical-align:middle; margin-right:20px;">
+    <img src="/images/agri_.png" alt="Logo" style="height:40px; margin-right:20px;">
     <div>
         <a th:href="@{/banco-de-imagens/search}">Banco de Imagens</a>
         <a th:href="@{/search}">Buscar</a>
         <a th:href="@{/upload}">Upload</a>
     </div>
+    <div class="user-menu">
+        <div class="user-icon" onclick="toggleDropdown()">
+            <img src="/images/user.jpg" alt="Perfil" class="profile-pic">
+        </div>
+        <div class="dropdown-content" id="dropdownMenu">
+            <a href="/auth/account"><i class="fas fa-user-cog"></i> Alterar Dados</a>
+            <a href="/auth/logout"><i class="fas fa-sign-out-alt"></i> Sair</a>
+        </div>
+    </div>
 </div>
+
+
 
 <div class="container">
     <h1>MeuDrive</h1>
@@ -79,9 +90,9 @@
             <input type="text" name="folderName" placeholder="Nome da nova pasta" required>
             <button type="submit">Criar</button>
         </form>
-
     </div>
 </div>
+
 <!-- Modal de renomear arquivo -->
 <div id="modalRenameFile" class="modal">
     <div class="modal-content">
@@ -95,173 +106,184 @@
     </div>
 </div>
 
-
 <div class="footer">
     &copy; 2025 MeuDrive - Todos os direitos reservados
 </div>
 
 <script>
-    // Botão flutuante abre o modal de Nova Pasta
-document.getElementById("btnNovaPasta").addEventListener("click", function () {
-    document.getElementById("modalNovaPasta").style.display = "block";
-});
-
-// Fecha o modal ao clicar no X
-document.getElementById("closeModal").addEventListener("click", function () {
-    document.getElementById("modalNovaPasta").style.display = "none";
-});
-
-// Fecha o modal ao clicar fora dele
-window.addEventListener("click", function (event) {
-    const modal = document.getElementById("modalNovaPasta");
-    if (event.target === modal) {
-        modal.style.display = "none";
-    }
-});
-
-// Reforço: botão esc fecha o modal
-window.addEventListener("keydown", function (event) {
-    if (event.key === "Escape") {
-        document.getElementById("modalNovaPasta").style.display = "none";
-    }
-});
-
-// Previne o comportamento padrão ao arrastar arquivos
-['dragenter', 'dragover', 'dragleave', 'drop'].forEach(event => {
-    window.addEventListener(event, e => {
-        e.preventDefault();
-        e.stopPropagation();
-    });
-});
-
-// Soltar arquivo na janela e realizar o upload
-window.addEventListener('drop', e => {
-    const files = e.dataTransfer.files;
-    if (files.length > 0) {
-        uploadFiles(files);
-    }
-});
-
-// Função de upload dos arquivos
-function uploadFiles(files) {
-    const folderPath = document.getElementById("folderPath").value;
-    const formData = new FormData();
-    formData.append("folderPath", folderPath);
-    for (let i = 0; i < files.length; i++) {
-        formData.append("files", files[i]);
-    }
-
-    // Mostrar barra de progresso
-    const progressBar = document.getElementById('progressBar');
-    const progressFill = document.getElementById('progressFill');
-    progressBar.style.display = 'block';
-    progressFill.style.width = '0';
-    progressFill.style.animation = 'loading 2s linear forwards';
-
-    fetch("/storage/uploadFiles", {
-        method: "POST",
-        body: formData,
-        credentials: "include"
-    })
-    .then(response => {
-        if (!response.ok) throw new Error("Falha no upload");
-        return response.text();
-    })
-    .then(() => {
-        setTimeout(() => {
-            progressBar.style.display = 'none';
-            alert("Upload realizado com sucesso!");
-            location.reload();
-        }, 2000);
-    })
-    .catch(err => {
-        progressBar.style.display = 'none';
-        console.error("Erro:", err);
-        alert("Erro ao enviar arquivos.");
-    });
+    // Toggle do menu do usuário
+   function toggleDropdown() {
+    const dropdown = document.getElementById("dropdownMenu");
+    dropdown.style.display = (dropdown.style.display === "block") ? "none" : "block";
 }
 
-// Visualizar arquivo
-document.querySelectorAll('.btn-view').forEach(link => {
-    link.addEventListener('click', e => {
-        e.preventDefault();
-        const file = e.target.closest('a').getAttribute('data-file');
-        window.open(`/view/${encodeURIComponent(file)}`, '_blank');
+// Fecha o menu se clicar fora dele
+window.addEventListener('click', function(e) {
+    const menu = document.getElementById("dropdownMenu");
+    const icon = document.querySelector(".user-icon");
+    if (!icon.contains(e.target)) {
+        menu.style.display = "none";
+    }
+});
+
+    // Botão flutuante abre o modal de Nova Pasta
+    document.getElementById("btnNovaPasta").addEventListener("click", function () {
+        document.getElementById("modalNovaPasta").style.display = "block";
     });
-});
 
-// Download de arquivo
-document.querySelectorAll('.btn-download').forEach(link => {
-    link.addEventListener('click', e => {
-        e.preventDefault();
-        const file = e.target.closest('a').getAttribute('data-file');
-        fetch(`/storage/downloadFile/${encodeURIComponent(file)}`, {
-            method: 'GET',
-            credentials: 'include'
-        })
-        .then(res => res.blob())
-        .then(blob => {
-            const url = URL.createObjectURL(blob);
-            const a = document.createElement('a');
-            a.href = url;
-            a.download = file;
-            document.body.appendChild(a);
-            a.click();
-            a.remove();
-        })
-        .catch(err => alert("Erro ao baixar."));
+    // Fecha o modal ao clicar no X
+    document.getElementById("closeModal").addEventListener("click", function () {
+        document.getElementById("modalNovaPasta").style.display = "none";
     });
-});
 
-// Abrir modal de renomear ao clicar no ícone
-document.querySelectorAll('.btn-rename').forEach(link => {
-    link.addEventListener('click', e => {
-        e.preventDefault();
-        const fileName = e.target.closest('a').getAttribute('data-file');
-        const fileNameWithoutExt = fileName.substring(0, fileName.lastIndexOf('.')); // Nome sem a extensão
-        const fileExt = fileName.substring(fileName.lastIndexOf('.')); // Extensão do arquivo
-
-        // Preencher os campos do modal com o nome e extensão
-        document.getElementById("oldFileName").value = fileName;
-        document.getElementById("newFileName").value = fileNameWithoutExt; // Apenas o nome sem a extensão
-
-        // Mostrar o modal
-        document.getElementById("modalRenameFile").style.display = "block";
-    });
-});
-
-// Fechar o modal de renomear
-document.getElementById("closeRenameModal").addEventListener("click", function () {
-    document.getElementById("modalRenameFile").style.display = "none";
-});
-
-// Enviar a alteração de renomeação
-document.getElementById("renameForm").addEventListener("submit", function (e) {
-    e.preventDefault();
-    const oldFileName = document.getElementById("oldFileName").value;
-    const newFileNameWithoutExt = document.getElementById("newFileName").value;
-    const fileExt = oldFileName.substring(oldFileName.lastIndexOf('.')); // Extrair a extensão original
-    const newFileName = newFileNameWithoutExt + fileExt; // Combinar novo nome com a extensão original
-
-    // Enviar a requisição para o servidor
-    fetch(`/storage/renameFile?oldName=${encodeURIComponent(oldFileName)}&newName=${encodeURIComponent(newFileName)}`, {
-        method: 'PATCH',
-        credentials: 'include'
-    })
-    .then(response => {
-        if (response.ok) {
-            alert("Arquivo renomeado!");
-            location.reload();
-        } else {
-            alert("Erro ao renomear.");
+    // Fecha o modal ao clicar fora dele
+    window.addEventListener("click", function (event) {
+        const modal = document.getElementById("modalNovaPasta");
+        if (event.target === modal) {
+            modal.style.display = "none";
         }
     });
-});
 
+    // Reforço: botão esc fecha o modal
+    window.addEventListener("keydown", function (event) {
+        if (event.key === "Escape") {
+            document.getElementById("modalNovaPasta").style.display = "none";
+        }
+    });
 
+    // Previne o comportamento padrão ao arrastar arquivos
+    ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(event => {
+        window.addEventListener(event, e => {
+            e.preventDefault();
+            e.stopPropagation();
+        });
+    });
+
+    // Soltar arquivo na janela e realizar o upload
+    window.addEventListener('drop', e => {
+        const files = e.dataTransfer.files;
+        if (files.length > 0) {
+            uploadFiles(files);
+        }
+    });
+
+    // Função de upload dos arquivos
+    function uploadFiles(files) {
+        const folderPath = document.getElementById("folderPath").value;
+        const formData = new FormData();
+        formData.append("folderPath", folderPath);
+        for (let i = 0; i < files.length; i++) {
+            formData.append("files", files[i]);
+        }
+
+        // Mostrar barra de progresso
+        const progressBar = document.getElementById('progressBar');
+        const progressFill = document.getElementById('progressFill');
+        progressBar.style.display = 'block';
+        progressFill.style.width = '0';
+        progressFill.style.animation = 'loading 2s linear forwards';
+
+        fetch("/storage/uploadFiles", {
+            method: "POST",
+            body: formData,
+            credentials: "include"
+        })
+        .then(response => {
+            if (!response.ok) throw new Error("Falha no upload");
+            return response.text();
+        })
+        .then(() => {
+            setTimeout(() => {
+                progressBar.style.display = 'none';
+                alert("Upload realizado com sucesso!");
+                location.reload();
+            }, 2000);
+        })
+        .catch(err => {
+            progressBar.style.display = 'none';
+            console.error("Erro:", err);
+            alert("Erro ao enviar arquivos.");
+        });
+    }
+
+    // Visualizar arquivo
+    document.querySelectorAll('.btn-view').forEach(link => {
+        link.addEventListener('click', e => {
+            e.preventDefault();
+            const file = e.target.closest('a').getAttribute('data-file');
+            window.open(`/view/${encodeURIComponent(file)}`, '_blank');
+        });
+    });
+
+    // Download de arquivo
+    document.querySelectorAll('.btn-download').forEach(link => {
+        link.addEventListener('click', e => {
+            e.preventDefault();
+            const file = e.target.closest('a').getAttribute('data-file');
+            fetch(`/storage/downloadFile/${encodeURIComponent(file)}`, {
+                method: 'GET',
+                credentials: 'include'
+            })
+            .then(res => res.blob())
+            .then(blob => {
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = file;
+                document.body.appendChild(a);
+                a.click();
+                a.remove();
+            })
+            .catch(err => alert("Erro ao baixar."));
+        });
+    });
+
+    // Abrir modal de renomear ao clicar no ícone
+    document.querySelectorAll('.btn-rename').forEach(link => {
+        link.addEventListener('click', e => {
+            e.preventDefault();
+            const fileName = e.target.closest('a').getAttribute('data-file');
+            const fileNameWithoutExt = fileName.substring(0, fileName.lastIndexOf('.')); // Nome sem a extensão
+            const fileExt = fileName.substring(fileName.lastIndexOf('.'));
+            document.getElementById('oldFileName').value = fileName;
+            document.getElementById('newFileName').value = fileNameWithoutExt;
+            document.getElementById('modalRenameFile').style.display = 'block';
+        });
+    });
+
+    // Fecha o modal de renomear ao clicar no X
+    document.getElementById("closeRenameModal").addEventListener("click", function () {
+        document.getElementById("modalRenameFile").style.display = "none";
+    });
+
+    // Enviar o formulário de renomear
+    document.getElementById('renameForm').addEventListener('submit', function (event) {
+        event.preventDefault();
+        const form = event.target;
+        const oldFileName = form.oldFileName.value;
+        const newFileName = form.newFileName.value;
+
+        fetch('/storage/renameFile', {
+            method: 'POST',
+            body: JSON.stringify({
+                oldFileName,
+                newFileName
+            }),
+            headers: {
+                'Content-Type': 'application/json'
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                alert("Arquivo renomeado com sucesso!");
+                location.reload();
+            } else {
+                alert("Erro ao renomear arquivo.");
+            }
+        });
+    });
 </script>
-
-<div id="toast" class="toast"></div>
 
 </body>
 </html>

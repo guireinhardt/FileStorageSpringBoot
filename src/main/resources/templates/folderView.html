@@ -27,8 +27,10 @@
     <!-- Botão de upload -->
     <label class="btn-upload">
         <i class="fas fa-upload"></i> Upload de Arquivos
+        <input type="hidden" id="folderPath" th:value="${currentFolder}">
         <input type="file" multiple hidden onchange="uploadFiles(this.files)">
     </label>
+
 
     <!-- Subpastas -->
     <h2>Pastas</h2>
@@ -52,10 +54,21 @@
         <tr th:each="file : ${files}">
             <td th:text="${file.name}"></td>
             <td>
-                <a href="#" class="btn-view" th:attr="data-file=${file.name}" title="Visualizar"><i class="fas fa-eye"></i></a>
-                <a href="#" class="btn-rename" th:attr="data-file=${file.name}" title="Renomear"><i class="fas fa-edit"></i></a>
-                <a href="#" class="btn-share" th:attr="data-file=${file.name}" title="Compartilhar"><i class="fas fa-share-alt"></i></a>
-                <a href="#" class="btn-download" th:attr="data-file=${file.name}" title="Download"><i class="fas fa-download"></i></a>
+                <a href="#" class="btn-view"
+                   th:attr="data-file=${currentFolder + '/' + file.name}"
+                   title="Visualizar"><i class="fas fa-eye"></i></a>
+                <a href="#" class="btn-rename" th:attr="data-file=${file.relativePath}" title="Renomear">
+                    <i class="fas fa-edit"></i>
+                </a>
+
+                <a href="#" class="btn-share" th:attr="data-file=${file.relativePath}" title="Compartilhar">
+                    <i class="fas fa-share-alt"></i>
+                </a>
+
+                <a href="#" class="btn-download" th:attr="data-file=${file.relativePath}" title="Download">
+                    <i class="fas fa-download"></i>
+                </a>
+
             </td>
         </tr>
         </tbody>
@@ -91,11 +104,17 @@
         <button class="close-btn" onclick="closeModal('modalRenameFile')">
             <i class="fas fa-times"></i>
         </button>
-        <form id="renameForm" method="post">
-            <input type="hidden" name="oldFileName" id="oldFileName">
-            <input type="text" name="newFileName" id="newFileName" placeholder="Novo nome" required>
+        <form id="renameForm">
+            <input type="hidden" id="filePath" name="filePath" />  <!-- Campo oculto para armazenar o caminho completo -->
+            <label for="oldFileName">Nome atual:</label>
+            <input type="text" id="oldFileName" name="oldFileName" readonly />
+
+            <label for="newFileName">Novo nome:</label>
+            <input type="text" id="newFileName" name="newFileName" />
+
             <button type="submit">Renomear</button>
         </form>
+
     </div>
 </div>
 
@@ -134,16 +153,49 @@
     }
 
     document.querySelectorAll('.btn-rename').forEach(btn => {
-        btn.onclick = (e) => {
-            e.preventDefault();
-            const file = btn.getAttribute("data-file");
-            const nameWithoutExt = file.substring(0, file.lastIndexOf('.'));
-            document.getElementById("oldFileName").value = file;
-            document.getElementById("newFileName").value = nameWithoutExt;
-            document.getElementById("modalRenameFile").style.display = "block";
-        };
-    });
+    btn.onclick = (e) => {
+        e.preventDefault();
+        const file = btn.getAttribute("data-file");  // Caminho completo do arquivo
+        const nameWithoutPath = file.substring(file.lastIndexOf("/") + 1);  // Extrai o nome do arquivo sem o caminho
+        const nameWithoutExt = nameWithoutPath.substring(0, nameWithoutPath.lastIndexOf('.'));  // Nome sem a extensão
 
+        // Preencher os campos do modal
+        document.getElementById("oldFileName").value = file;  // Caminho completo do arquivo
+        document.getElementById("newFileName").value = nameWithoutExt;  // Nome sem extensão
+        document.getElementById("filePath").value = file;  // Mantém o caminho completo no campo oculto
+
+        // Mostrar o modal
+        document.getElementById("modalRenameFile").style.display = "block";
+    };
+});
+
+// Enviar a alteração de renomeação
+document.getElementById("renameForm").addEventListener("submit", function (e) {
+    e.preventDefault();
+
+    const oldFileNameWithPath = document.getElementById("filePath").value;  // Caminho completo do arquivo
+    const newFileNameWithoutExt = document.getElementById("newFileName").value;
+
+    // Extrair a extensão original
+    const fileExt = oldFileNameWithPath.substring(oldFileNameWithPath.lastIndexOf('.'));
+
+    // Combinar o novo nome com a extensão original
+    const newFileName = newFileNameWithoutExt + fileExt;
+
+    // Enviar a requisição para o servidor com o caminho completo
+    fetch(`/storage/renameFile?oldName=${encodeURIComponent(oldFileNameWithPath)}&newName=${encodeURIComponent(newFileName)}`, {
+        method: 'PATCH',
+        credentials: 'include'
+    })
+    .then(response => {
+        if (response.ok) {
+            alert("Arquivo renomeado!");
+            location.reload();  // Recarregar a página para refletir a alteração
+        } else {
+            alert("Erro ao renomear.");
+        }
+    });
+});
     // Função para exibir o toast de sucesso
     function showToast(message, duration = 5000) {
         const toast = document.getElementById('toast');
@@ -156,6 +208,77 @@
             toast.style.display = 'none';
         }, duration);
     }
+    // visualizar arquivo
+    document.querySelectorAll('.btn-view').forEach(link => {
+    link.addEventListener('click', e => {
+        e.preventDefault();
+        const file = e.target.closest('a').getAttribute('data-file');
+        window.open(`/storage/viewFile/${file}`, '_blank');
+
+    });
+});
+    // Compartilhar arquivo a partir do botão
+// Compartilhar arquivo a partir do botão
+function shareFileFromButton(button) {
+    const filePath = button.getAttribute('data-file'); // Correto, uma vez só
+    const baseUrl = window.location.origin;
+
+    const lastSlashIndex = filePath.lastIndexOf('/');
+    const folderPath = filePath.substring(0, lastSlashIndex);
+    const fileName = filePath.substring(lastSlashIndex + 1);
+    const shareUrl = `${baseUrl}/storage/viewFile/${folderPath}/${encodeURIComponent(fileName)}`;
+
+    navigator.clipboard.writeText(shareUrl).then(function () {
+        showToast(`Link copiado!`);
+    }, function (err) {
+        showToast("Erro ao copiar link: " + err);
+    });
+}
+
+    // Adicionar evento de compartilhamento para o botão de compartilhamento
+document.querySelectorAll('.btn-share').forEach(btn => {
+    btn.onclick = function (e) {
+        e.preventDefault();
+        shareFileFromButton(btn);
+    };
+});
+    // download
+document.querySelectorAll('.btn-download').forEach(link => {
+    link.addEventListener('click', e => {
+        e.preventDefault();
+        const fullPath = e.target.closest('a').getAttribute('data-file'); // Renomeado para evitar conflito
+
+        // Separa o caminho e o nome do arquivo
+        const lastSlashIndex = fullPath.lastIndexOf('/');
+        const folderPath = fullPath.substring(0, lastSlashIndex);
+        const fileName = fullPath.substring(lastSlashIndex + 1);
+
+        // Monta a URL com o caminho intacto e o nome codificado
+        const url = `/storage/downloadFile/${folderPath}/${encodeURIComponent(fileName)}`;
+
+        fetch(url, {
+            method: 'GET',
+            credentials: 'include'
+        })
+        .then(res => {
+            if (!res.ok) throw new Error("Erro no download");
+            return res.blob();
+        })
+        .then(blob => {
+            const downloadUrl = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = downloadUrl;
+            a.download = fileName;
+            document.body.appendChild(a);
+            a.click();
+            a.remove();
+        })
+        .catch(err => alert("Erro ao baixar: " + err.message));
+    });
+});
+
+
+
 </script>
 
 <div class="loading-spinner" id="loadingSpinner" style="display:none;"></div>

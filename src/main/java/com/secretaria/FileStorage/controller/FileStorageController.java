@@ -29,6 +29,7 @@ import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 import org.springframework.web.util.UriUtils;
 
 import java.io.*;
+import java.net.URLDecoder;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -166,27 +167,43 @@ public class FileStorageController {
             model.addAttribute("message", message);
             return "error"; // Nome do arquivo HTML sem a extensão
         } */
-    @GetMapping("/downloadFile/{fileName:.+}")
-    public ResponseEntity<Resource> downloadFile(@PathVariable String fileName, HttpServletRequest request) {
-        Resource resource = fileStorageService.loadFileAsResource(fileName);
-        String contentType = null;
-        try {
-            contentType = request.getServletContext().getMimeType(resource.getFile().getAbsolutePath());
-        } catch (Exception e) {
-            logger.info("Could not determine file type");
+        @GetMapping("/downloadFile/**")
+        public ResponseEntity<Resource> downloadFile(HttpServletRequest request) {
+            String uri = request.getRequestURI(); // /storage/downloadFile/Finalizados/produ%C3%A7%C3%A3o/arquivo.mp4
+            String basePath = "/storage/downloadFile/";
+            String encodedPath = uri.substring(uri.indexOf(basePath) + basePath.length());
+
+            // Decodifica o caminho para tratar corretamente acentos e caracteres especiais
+            String decodedPath = URLDecoder.decode(encodedPath, StandardCharsets.UTF_8);
+
+            Resource resource = fileStorageService.loadFileAsResource(decodedPath);
+            String contentType = null;
+            try {
+                contentType = request.getServletContext().getMimeType(resource.getFile().getAbsolutePath());
+            } catch (Exception e) {
+                logger.info("Could not determine file type");
+            }
+            if (contentType == null) {
+                contentType = "application/octet-stream";
+            }
+            return ResponseEntity.ok()
+                    .contentType(MediaType.parseMediaType(contentType))
+                    .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"" + resource.getFilename() + "\"")
+                    .body(resource);
         }
-        if (contentType == null) {
-            contentType = "application/octet-stream";
-        }
-        return ResponseEntity.ok()
-                .contentType(MediaType.parseMediaType(contentType))
-                .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"" + resource.getFilename() + "\"")
-                .body(resource);
-    }
-    @GetMapping("/viewFile/{fileName:.+}")
-    public ResponseEntity<Resource> viewFile(@PathVariable String fileName, HttpServletRequest request) {
+
+
+    /* metodo funcional 08/05 @GetMapping("/viewFile/**")
+    public ResponseEntity<Resource> viewFile(HttpServletRequest request) {
         try {
-            Resource resource = fileStorageService.loadFileAsResource(fileName);
+            String requestURI = request.getRequestURI();
+            String basePath = "/storage/viewFile/";
+            String filePathEncoded = requestURI.substring(requestURI.indexOf(basePath) + basePath.length());
+
+            // Decodifica caracteres especiais como %C3%A7 para "ç"
+            String filePath = URLDecoder.decode(filePathEncoded, StandardCharsets.UTF_8);
+
+            Resource resource = fileStorageService.loadFileAsResource(filePath);
 
             if (resource == null || !resource.exists()) {
                 return ResponseEntity.notFound().build();
@@ -205,7 +222,43 @@ public class FileStorageController {
         } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
         }
+    } */
+    @GetMapping("/viewFile/**")
+    public ResponseEntity<Resource> viewFile(HttpServletRequest request) {
+        try {
+            String requestURI = request.getRequestURI();
+            String basePath = "/storage/viewFile/";
+            String filePathEncoded = requestURI.substring(requestURI.indexOf(basePath) + basePath.length());
+
+            // Decodifica o caminho do arquivo
+            String filePath = URLDecoder.decode(filePathEncoded, StandardCharsets.UTF_8);
+
+            // Carrega o arquivo como recurso
+            Resource resource = fileStorageService.loadFileAsResource(filePath);
+
+            if (resource == null || !resource.exists()) {
+                return ResponseEntity.notFound().build();  // Retorna 404 se o arquivo não for encontrado
+            }
+
+            // Determina o tipo MIME do arquivo
+            String contentType = request.getServletContext().getMimeType(resource.getFile().getAbsolutePath());
+            if (contentType == null) {
+                contentType = "application/octet-stream";  // Tipo genérico se não encontrado
+            }
+
+            return ResponseEntity.ok()
+                    .contentType(MediaType.parseMediaType(contentType))
+                    .header(HttpHeaders.CONTENT_DISPOSITION, "inline; filename=\"" + resource.getFilename() + "\"")
+                    .body(resource);  // Retorna o arquivo como resposta
+
+        } catch (Exception e) {
+            e.printStackTrace();
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();  // Retorna erro interno em caso de falha
+        }
     }
+
+
+
 
     @PostMapping("/bulk-download")
     public ResponseEntity<Resource> bulkDownload(@RequestParam("selectedFiles") List<String> selectedFiles) throws IOException {

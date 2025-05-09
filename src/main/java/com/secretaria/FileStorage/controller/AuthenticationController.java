@@ -82,6 +82,46 @@ public class AuthenticationController {
         this.repository.save(newUser);
         return ResponseEntity.ok().build();
     }
+    @GetMapping("/logout")
+    public ResponseEntity<Void> logout() {
+        // Invalida o cookie JWT no cliente
+        ResponseCookie cookie = ResponseCookie.from("authToken", "")
+                .httpOnly(true)
+                .secure(false)
+                .path("/")
+                .maxAge(0) // Remove o cookie imediatamente
+                .sameSite("Lax")
+                .build();
+
+        return ResponseEntity.status(HttpStatus.OK)
+                .header(HttpHeaders.SET_COOKIE, cookie.toString())
+                .build();
+    }
+    @GetMapping("/account")
+    public String accountPage(@CookieValue("authToken") String token, Model model) {
+        String login = tokenService.validateToken(token);
+        UsersEntity user = (UsersEntity) repository.findByUsername(login);
+        model.addAttribute("user", user);
+        return "account";
+    }
+
+    @PostMapping("/account")
+    public String updateAccount(@RequestParam String username,
+                                @RequestParam String password,
+                                @CookieValue("authToken") String token,
+                                Model model) {
+        String login = tokenService.validateToken(token);
+        UsersEntity user = (UsersEntity) repository.findByUsername(login);
+
+        if (user != null) {
+            user.setUsername(username);
+            user.setPassword(new BCryptPasswordEncoder().encode(password));
+            repository.save(user);
+            model.addAttribute("success", true);
+        }
+
+        return "account"; // Recarrega a mesma página com os dados atualizados
+    }
 
 }
 

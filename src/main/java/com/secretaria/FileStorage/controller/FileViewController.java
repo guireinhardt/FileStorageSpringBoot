@@ -5,10 +5,7 @@ import com.secretaria.FileStorage.config.KeywordConfig;
 import com.secretaria.FileStorage.dto.FileResultDTO;
 import com.secretaria.FileStorage.exception.FileStorageException;
 import com.secretaria.FileStorage.exception.FileStorageNotFoundException;
-import com.secretaria.FileStorage.service.FileListService;
-import com.secretaria.FileStorage.service.FileSearchService;
-import com.secretaria.FileStorage.service.FileStorageService;
-import com.secretaria.FileStorage.service.FileViewService;
+import com.secretaria.FileStorage.service.*;
 import com.secretaria.FileStorage.vo.FileVO;
 import com.secretaria.FileStorage.infra.security.TokenService;
 import jakarta.servlet.http.HttpServletRequest;
@@ -34,6 +31,7 @@ import java.io.UnsupportedEncodingException;
 import java.net.MalformedURLException;
 import java.net.URLDecoder;
 import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -99,8 +97,12 @@ public class FileViewController {
                     return; // Ignora arquivos/pastas dentro da lixeira
                 }
 
-                // Cria o objeto de valor para o arquivo/pasta
-                FileVO.FileValueObject fileItem = new FileVO.FileValueObject(fileName, isDirectory);
+                // Obtém o caminho absoluto e calcula o relativePath
+                String absolutePath = path.toAbsolutePath().toString().replace("\\", "/");
+                String relativePath = absolutePath.replace(rootLocation.toAbsolutePath().toString().replace("\\", "/") + "/", "");
+
+                // Cria o objeto de valor para o arquivo/pasta, agora incluindo o relativePath
+                FileVO.FileValueObject fileItem = new FileVO.FileValueObject(fileName, isDirectory, relativePath);
 
                 // Adiciona o item na lista de pastas ou arquivos
                 if (isDirectory) {
@@ -110,7 +112,6 @@ public class FileViewController {
                 }
             });
         } catch (IOException e) {
-
             throw new FileStorageException("Erro ao listar arquivos e pastas", e);
         }
 
@@ -120,6 +121,7 @@ public class FileViewController {
 
         return "list"; // Retorna o nome do template a ser renderizado
     }
+
 
 
     @GetMapping("/storage/openFolder/**")
@@ -146,11 +148,19 @@ public class FileViewController {
             paths.forEach(path -> {
                 String fileName = path.getFileName().toString();
                 boolean isDirectory = Files.isDirectory(path);
-                FileVO.FileValueObject fileItem = new FileVO.FileValueObject(fileName, isDirectory);
+
+                // Obtém o caminho absoluto e calcula o relativePath
+                String absolutePath = path.toAbsolutePath().toString().replace("\\", "/");
+                String relativePath = absolutePath.replace(fileListService.getRootLocation().toAbsolutePath().toString().replace("\\", "/") + "/", "");
+
+                // Cria o objeto de valor para o arquivo/pasta, agora incluindo o relativePath
+                FileVO.FileValueObject fileItem = new FileVO.FileValueObject(fileName, isDirectory, relativePath);
+
+                // Adiciona o item na lista de pastas ou arquivos
                 if (isDirectory) {
-                    folders.add(fileItem);
+                    folders.add(fileItem); // Adiciona à lista de pastas
                 } else {
-                    files.add(fileItem);
+                    files.add(fileItem); // Adiciona à lista de arquivos
                 }
             });
         } catch (IOException e) {
@@ -167,45 +177,31 @@ public class FileViewController {
         return "folderView"; // Retorna para o template correto
     }
 
+    @Autowired
+    private InstituteService instituteService;
 
-
-
-
+    @Autowired
+    private CityService cityService;
 
     @GetMapping("/search")
     public String search(@RequestParam(required = false) String query,
                          @RequestParam(required = false) String keyword,
                          @RequestParam(required = false) String subkeyword,
                          @RequestParam(required = false) String city,
+                         @RequestParam(required = false) String institute,
                          Model model) {
 
-        System.out.println("Keyword selecionada: " + keyword);
-        System.out.println("Subkeyword selecionada: " + subkeyword);
-        System.out.println("Cidade selecionada: " + city);
+        StringBuilder fullQuery = new StringBuilder();
+        if (query != null && !query.isEmpty()) fullQuery.append(query.trim()).append(" ");
+        if (keyword != null && !keyword.isEmpty()) fullQuery.append(keyword.trim()).append(" ");
+        if (subkeyword != null && !subkeyword.isEmpty()) fullQuery.append(subkeyword.trim()).append(" ");
+        if (city != null && !city.isEmpty()) fullQuery.append(city.trim()).append(" ");
+        if (institute != null && !institute.isEmpty()) fullQuery.append(institute.trim()).append(" ");
 
         List<FileResultDTO> files = new ArrayList<>();
-
-        // Monta a query completa
-        StringBuilder fullQuery = new StringBuilder();
-        if (query != null && !query.isEmpty()) {
-            fullQuery.append(query.trim()).append(" ");
-        }
-        if (keyword != null && !keyword.isEmpty()) {
-            fullQuery.append(keyword.trim()).append(" ");
-        }
-        if (subkeyword != null && !subkeyword.isEmpty()) {
-            fullQuery.append(subkeyword.trim()).append(" ");
-        }
-        if (city != null && !city.isEmpty()) {
-            fullQuery.append(city.trim()).append(" ");
-        }
-
-        // A busca só será realizada se o campo de pesquisa não estiver vazio
         if (!fullQuery.toString().trim().isEmpty()) {
             try {
-                // Realiza a busca (agora já sem arquivos da lixeira)
                 files = fileSearchService.searchFiles(fullQuery.toString().trim());
-
                 model.addAttribute("files", files);
             } catch (IOException e) {
                 e.printStackTrace();
@@ -214,12 +210,15 @@ public class FileViewController {
         }
 
         model.addAttribute("keywords", keywordConfig.getKeywordList());
+        model.addAttribute("institutes", instituteService.getAllInstitutes());
+        model.addAttribute("cities", cityService.getAllCitiesOfSaoPaulo());
+
+        model.addAttribute("selectedCity", city);
+        model.addAttribute("selectedInstitute", institute);
+        model.addAttribute("selectedKeyword", keyword);
+
         return "search";
     }
-
-
-
-
 
 
 
@@ -237,55 +236,70 @@ public class FileViewController {
     }
 
 
-    @GetMapping("/view/{fileName:.+}")
-    public ResponseEntity<Resource> serveFile(@PathVariable String fileName,
-                                              @CookieValue(value = "authToken", required = false) String authToken) { // Busca o token no cookie
+    @GetMapping("/view/{filePath:.+}")
+    public ResponseEntity<Resource> viewFile(@PathVariable String filePath,
+                                             @CookieValue(value = "authToken", required = false) String authToken) {
         try {
+            // Verifica se o token de autenticação está presente
             if (authToken == null || authToken.isEmpty()) {
-                return ResponseEntity.status(HttpStatus.FORBIDDEN).body(null);  // Retorna 403 se o token não estiver presente
+                return ResponseEntity.status(HttpStatus.FORBIDDEN).body(null);
             }
 
-            // Valida o token JWT
-            String username = tokenService.validateToken(authToken);  // Usa o TokenService para validar o token
-
+            // Valida o token
+            String username = tokenService.validateToken(authToken);
             if (username == null || username.isEmpty()) {
-                return ResponseEntity.status(HttpStatus.FORBIDDEN).body(null);  // Retorna 403 se o token for inválido
+                return ResponseEntity.status(HttpStatus.FORBIDDEN).body(null);
             }
 
-            // Se o token for válido, processa a requisição e serve o arquivo
-            Path filePath = fileStorageConfig.getUploadDirPath().resolve(fileName).normalize();
-            Resource resource = new UrlResource(filePath.toUri());
+            // Resolve o caminho absoluto com base no diretório base + caminho relativo
+            Path basePath = fileStorageConfig.getUploadDirPath();  // Diretório de upload configurado
+            Path resolvedPath = basePath.resolve(filePath).normalize();  // Resolve o caminho do arquivo
 
+            // Verifica se o arquivo existe e se é legível
+            Resource resource = new UrlResource(resolvedPath.toUri());
             if (resource.exists() && resource.isReadable()) {
-                String contentType = fileViewService.getContentType(fileName);  // Chama o método do serviço para obter o tipo de conteúdo
+                // Obtém o tipo de conteúdo do arquivo
+                String contentType = fileViewService.getContentType(filePath);
 
                 return ResponseEntity.ok()
                         .header(HttpHeaders.CONTENT_DISPOSITION, "inline; filename=\"" + resource.getFilename() + "\"")
                         .contentType(MediaType.parseMediaType(contentType))
                         .body(resource);
             } else {
-                return ResponseEntity.notFound().build();  // Retorna 404 caso o arquivo não seja encontrado
+                return ResponseEntity.status(HttpStatus.NOT_FOUND).build();  // Retorna 404 se não encontrado
             }
         } catch (MalformedURLException e) {
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();  // Retorna 500 em caso de erro de URL
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();  // Em caso de erro na URL
         }
     }
+
+
+
+
+
+
+
+
     @PatchMapping("/storage/renameFile")
     public ResponseEntity<?> renameFile(@RequestParam String oldName, @RequestParam String newName) {
-        Path sourcePath = fileStorageConfig.getUploadDirPath().resolve(oldName);
-        Path targetPath = fileStorageConfig.getUploadDirPath().resolve(newName);
         try {
+            // Obtém o caminho completo com base no diretório raiz
+            Path rootLocation = fileStorageConfig.getUploadDirPath();
+
+            // Resolve o caminho completo do arquivo de origem
+            Path sourcePath = rootLocation.resolve(oldName);  // Caminho completo do arquivo original (incluindo subpastas)
+
+            // Resolve o caminho do arquivo de destino no mesmo diretório, mas com o novo nome
+            Path targetPath = sourcePath.getParent().resolve(newName);  // Mantém o diretório, apenas altera o nome
+
+            // Renomeia o arquivo
             Files.move(sourcePath, targetPath);
+
             return ResponseEntity.ok().body("Arquivo renomeado com sucesso");
         } catch (IOException e) {
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Erro ao renomear o arquivo");
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Erro ao renomear o arquivo: " + e.getMessage());
         }
     }
-
-
-
-
-
     @ExceptionHandler(Exception.class)
     public ResponseEntity<String> handleException(Exception e) {
         return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Erro interno: " + e.getMessage());

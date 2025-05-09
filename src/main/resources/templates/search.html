@@ -22,12 +22,20 @@
 
         <select name="keyword" id="keyword">
             <option value="">Selecione uma palavra-chave</option>
-            <option th:each="keyword : ${keywords}" th:value="${keyword}" th:text="${keyword}"></option>
+            <option th:each="keyword : ${keywords}" th:value="${keyword}" th:text="${keyword}"
+                    th:selected="${keyword == selectedKeyword}"></option>
+        </select>
+
+        <select name="institute">
+            <option value="">Selecione um instituto</option>
+            <option th:each="inst : ${institutes}" th:value="${inst}" th:text="${inst}"
+                    th:selected="${inst == selectedInstitute}"></option>
         </select>
 
         <select name="city">
             <option value="">Selecione uma cidade</option>
-            <option th:each="city : ${cities}" th:value="${city}" th:text="${city}"></option>
+            <option th:each="city : ${cities}" th:value="${city}" th:text="${city}"
+                    th:selected="${city == selectedCity}"></option>
         </select>
 
         <button type="submit"><i class="fas fa-search"></i> Buscar</button>
@@ -43,14 +51,20 @@
 
         <ul class="file-list">
             <li th:each="file : ${files}">
-                <input type="checkbox" name="selectedFiles" th:value="${file.fullPath}" class="file-checkbox">
+                <input type="checkbox" name="selectedFiles" th:value="${file.name}" class="file-checkbox">
 
                 <span class="file-name" th:text="${file.name}"></span>
 
                 <!-- Visualizar -->
-                <a th:href="@{/view/{fileName}(fileName=${file.name})}" target="_blank" title="Visualizar">
+                <a th:href="@{/view/{filePath}(filePath=${file.fullPath})}" target="_blank" title="Visualizar">
                     <i class="fas fa-eye action-icon"></i>
                 </a>
+
+
+
+
+
+
 
                 <!-- Download -->
                 <a th:href="@{/download/{fileName}(fileName=${file.name})}" title="Download">
@@ -60,7 +74,7 @@
                 <!-- Compartilhar -->
                 <button type="button"
                         class="share-btn"
-                        th:attr="data-file=${file.fullPath}"
+                        th:attr="data-file=${file.name}"
                         onclick="shareFileFromButton(this)"
                         title="Compartilhar">
                     <i class="fas fa-share-alt action-icon"></i>
@@ -68,7 +82,7 @@
 
                 <!-- Renomear -->
                 <button type="button"
-                        th:attr="data-file=${file.fullPath}"
+                        th:attr="data-file=${file.name}"
                         onclick="renameFile(this.getAttribute('data-file'))"
                         title="Renomear">
                     <i class="fas fa-pen action-icon"></i>
@@ -76,13 +90,16 @@
 
                 <!-- Deletar -->
                 <button type="button"
-                        th:attr="data-file=${file.fullPath}"
+                        th:attr="data-file=${file.name}"
                         onclick="deleteFile(this.getAttribute('data-file'))"
                         title="Deletar">
                     <i class="fas fa-trash action-icon"></i>
                 </button>
             </li>
         </ul>
+
+
+
     </form>
 
     <div class="back-button">

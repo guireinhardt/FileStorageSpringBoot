@@ -22,6 +22,9 @@ public class SecurityConfig {
 
     @Autowired
     SecurityFilter securityFilter;
+    @Autowired
+    CustomAuthenticationEntryPoint customAuthEntryPoint;
+
 
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity httpSecurity) {
@@ -45,7 +48,11 @@ public class SecurityConfig {
                             .requestMatchers(HttpMethod.GET, "/download/**").authenticated()
                             .requestMatchers("/success", "/error").permitAll()
                             .requestMatchers(HttpMethod.POST, "/storage/delete").hasRole("ADMIN") // Apenas admin pode deletar
-                            .anyRequest().authenticated())
+                            .anyRequest().authenticated()
+                    )
+                    .exceptionHandling(exception -> exception
+                            .authenticationEntryPoint(customAuthEntryPoint) // redirecionamento personalizado
+                    )
                     .headers(headers -> headers.frameOptions().sameOrigin())
                     .addFilterBefore(securityFilter, UsernamePasswordAuthenticationFilter.class)
                     .build();

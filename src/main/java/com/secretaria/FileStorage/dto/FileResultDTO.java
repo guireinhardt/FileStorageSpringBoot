@@ -1,6 +1,7 @@
 package com.secretaria.FileStorage.dto;
 
 public class FileResultDTO {
+    private String id;
     private String name;
     private String fullPath;
 

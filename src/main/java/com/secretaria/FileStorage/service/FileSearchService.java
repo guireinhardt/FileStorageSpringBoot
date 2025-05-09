@@ -15,6 +15,7 @@ import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
+import java.util.stream.StreamSupport;
 
 @Service
 public class FileSearchService {
@@ -27,33 +28,30 @@ public class FileSearchService {
     }
 
     public List<FileResultDTO> searchFiles(String query) throws IOException {
-        String lowerCaseQuery = query.toLowerCase();
+        List<String> queryTerms = Arrays.stream(query.toLowerCase().split("\\s+"))
+                .filter(term -> !term.isBlank())
+                .collect(Collectors.toList());
 
         try (Stream<Path> paths = Files.walk(Paths.get(fileStorageLocation))) {
             return paths
                     .filter(Files::isRegularFile)
-                    // Ignora arquivos na lixeira
-                    .filter(path -> {
-                        for (Path part : path) {
-                            if (part.toString().equalsIgnoreCase("lixeira")) {
-                                return false;
-                            }
-                        }
-                        return true;
-                    })
-                    // Filtra por nome
+                    // Ignora arquivos dentro de qualquer subpasta "lixeira"
+                    .filter(path -> StreamSupport.stream(path.spliterator(), false)
+                            .noneMatch(part -> part.toString().equalsIgnoreCase("lixeira")))
+                    // Filtra arquivos que contenham todos os termos no nome
                     .filter(path -> {
                         String fileName = path.getFileName().toString().toLowerCase();
-                        return fileName.contains(lowerCaseQuery);
+                        return queryTerms.stream().allMatch(fileName::contains);
                     })
-                    // Cria o DTO com nome e caminho completo
+                    // Mapeia para DTO com nome simples e caminho completo
                     .map(path -> new FileResultDTO(
-                            path.getFileName().toString(),
-                            path.toString()
+                            path.getFileName().toString(),   // Só o nome
+                            path.toAbsolutePath().toString() // Caminho completo
                     ))
                     .collect(Collectors.toList());
         }
     }
+
 
 
 
