@@ -56,15 +56,9 @@
                 <span class="file-name" th:text="${file.name}"></span>
 
                 <!-- Visualizar -->
-                <a th:href="@{/view/{filePath}(filePath=${file.fullPath})}" target="_blank" title="Visualizar">
+                <a th:href="@{'/view'(path=${file.fullPath})}" target="_blank" title="Visualizar">
                     <i class="fas fa-eye action-icon"></i>
                 </a>
-
-
-
-
-
-
 
                 <!-- Download -->
                 <a th:href="@{/download/{fileName}(fileName=${file.name})}" title="Download">

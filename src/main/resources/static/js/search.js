@@ -68,13 +68,16 @@ bulkDownloadForm.addEventListener('submit', function(e) {
 function renameFile(fileName) {
     const newFileName = prompt("Digite o novo nome para o arquivo:", fileName);
     if (newFileName) {
-        fetch('/storage/renameFile', {
-            method: 'POST',
+        const params = new URLSearchParams({
+            oldName: fileName,
+            newName: newFileName
+        });
+
+        fetch('/storage/renameFile?' + params.toString(), {
+            method: 'PATCH',
             headers: {
-                'Content-Type': 'application/json',
                 'Authorization': 'Bearer ' + localStorage.getItem('authToken')
-            },
-            body: JSON.stringify({ oldFileName: fileName, newFileName: newFileName })
+            }
         })
         .then(response => {
             if (response.ok) {
@@ -90,6 +93,7 @@ function renameFile(fileName) {
         });
     }
 }
+
 
 // Função de deletar
 // Função de deletar

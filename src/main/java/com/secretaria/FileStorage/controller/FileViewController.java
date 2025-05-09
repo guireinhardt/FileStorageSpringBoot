@@ -10,6 +10,7 @@ import com.secretaria.FileStorage.vo.FileVO;
 import com.secretaria.FileStorage.infra.security.TokenService;
 import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.core.io.FileSystemResource;
 import org.springframework.core.io.Resource;
 import org.springframework.core.io.UrlResource;
 import org.springframework.http.HttpHeaders;
@@ -35,9 +36,7 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
+import java.util.*;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import java.io.UnsupportedEncodingException;
@@ -235,7 +234,39 @@ public class FileViewController {
         return fileName;
     }
 
+    //VISUALIZAR OS ARQUIVOS NA PAGINA DE BUSCA
+    @GetMapping("/view")
+    public ResponseEntity<Resource> viewFileSearch(@RequestParam("path") String filePath,
+                                             @CookieValue(value = "authToken", required = false) String authToken) {
+        try {
+            if (authToken == null || authToken.isEmpty()) {
+                return ResponseEntity.status(HttpStatus.FORBIDDEN).body(null);
+            }
 
+            String username = tokenService.validateToken(authToken);
+            if (username == null || username.isEmpty()) {
+                return ResponseEntity.status(HttpStatus.FORBIDDEN).body(null);
+            }
+
+            Path basePath = fileStorageConfig.getUploadDirPath();
+            Path resolvedPath = basePath.resolve(filePath).normalize();
+
+            Resource resource = new UrlResource(resolvedPath.toUri());
+            if (resource.exists() && resource.isReadable()) {
+                String contentType = fileViewService.getContentType(filePath);
+
+                return ResponseEntity.ok()
+                        .header(HttpHeaders.CONTENT_DISPOSITION, "inline; filename=\"" + resource.getFilename() + "\"")
+                        .contentType(MediaType.parseMediaType(contentType))
+                        .body(resource);
+            } else {
+                return ResponseEntity.notFound().build();
+            }
+        } catch (MalformedURLException e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+        }
+    }
+    //VISUALIZAR OS ARQUIVOS NA RAIZ
     @GetMapping("/view/{filePath:.+}")
     public ResponseEntity<Resource> viewFile(@PathVariable String filePath,
                                              @CookieValue(value = "authToken", required = false) String authToken) {
@@ -273,13 +304,6 @@ public class FileViewController {
         }
     }
 
-
-
-
-
-
-
-
     @PatchMapping("/storage/renameFile")
     public ResponseEntity<?> renameFile(@RequestParam String oldName, @RequestParam String newName) {
         try {
@@ -300,6 +324,66 @@ public class FileViewController {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Erro ao renomear o arquivo: " + e.getMessage());
         }
     }
+    //rota de renomear na pasta raiz
+    @PatchMapping("/storage/renameRootFile")
+    @ResponseBody
+    public ResponseEntity<Map<String, Object>> renameRootFile(
+            @RequestParam String oldFileName,
+            @RequestParam String newFileName) {
+
+        Map<String, Object> response = new HashMap<>();
+        try {
+            // Obter o diretório de upload
+            Path rootLocation = fileStorageConfig.getUploadDirPath();  // Já existe em sua configuração
+
+            // Verifica se o nome do arquivo contém "/" para evitar renomeação fora da raiz
+            if (oldFileName.contains("/") || newFileName.contains("/")) {
+                response.put("success", false);
+                response.put("message", "Renomeação apenas na raiz permitida.");
+                return ResponseEntity.badRequest().body(response);
+            }
+
+            // Obter a extensão do arquivo original
+            String oldExtension = getExtension(oldFileName);
+
+            // Se o novo nome não contiver a extensão, adicione a extensão original ao nome
+            if (!newFileName.contains(".")) {
+                newFileName += oldExtension; // Adiciona a extensão original ao novo nome
+            }
+
+            // Resolve os caminhos completos do arquivo de origem e destino
+            Path sourcePath = rootLocation.resolve(oldFileName);  // Caminho completo do arquivo original
+            Path targetPath = sourcePath.getParent().resolve(newFileName);  // Caminho do novo arquivo com novo nome
+
+            // Verifica se o arquivo de origem existe
+            if (!Files.exists(sourcePath)) {
+                response.put("success", false);
+                response.put("message", "Arquivo original não encontrado.");
+                return ResponseEntity.badRequest().body(response);
+            }
+
+            // Realiza a renomeação
+            Files.move(sourcePath, targetPath);
+
+            response.put("success", true);
+            return ResponseEntity.ok(response);
+        } catch (Exception e) {
+            response.put("success", false);
+            response.put("message", "Erro ao renomear: " + e.getMessage());
+            return ResponseEntity.status(500).body(response);
+        }
+    }
+
+    // Função para obter a extensão do arquivo
+    private String getExtension(String fileName) {
+        int index = fileName.lastIndexOf(".");
+        if (index > 0) {
+            return fileName.substring(index);  // Retorna a extensão incluindo o ponto (ex: .mp4)
+        }
+        return "";  // Retorna uma string vazia se não houver extensão
+    }
+
+
     @ExceptionHandler(Exception.class)
     public ResponseEntity<String> handleException(Exception e) {
         return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Erro interno: " + e.getMessage());
@@ -344,6 +428,36 @@ public class FileViewController {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
         }
     }
+
+    //compartilhamento publico
+    @GetMapping("/storage/view/{fileName}")
+    public ResponseEntity<Resource> viewFile(@PathVariable String fileName) {
+        try {
+            Path filePath = fileStorageConfig.getUploadDirPath().resolve(fileName);
+            Resource resource = new FileSystemResource(filePath);
+
+            if (!resource.exists()) {
+                return ResponseEntity.notFound().build();
+            }
+
+            // Detectar o tipo MIME do arquivo
+            String contentType = Files.probeContentType(filePath);
+
+            if (contentType == null) {
+                contentType = "application/octet-stream"; // fallback, caso o tipo MIME não seja detectado
+            }
+
+            return ResponseEntity.ok()
+                    .contentType(MediaType.parseMediaType(contentType)) // Define o tipo correto
+                    .body(resource);
+
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+        }
+    }
+
+
+
 
 
 
