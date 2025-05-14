@@ -61,26 +61,29 @@
                 </a>
 
                 <!-- Download -->
-                <a th:href="@{/download/{fileName}(fileName=${file.name})}" title="Download">
-                    <i class="fas fa-download action-icon"></i>
+                <a href="#" class="btn-download" th:attr="data-file=${file.relativePath}" title="Download">
+                    <i class="fas fa-download"></i>
                 </a>
 
                 <!-- Compartilhar -->
                 <button type="button"
                         class="share-btn"
-                        th:attr="data-file=${file.name}"
+                        th:attr="data-file=${file.relativePath}"
                         onclick="shareFileFromButton(this)"
                         title="Compartilhar">
                     <i class="fas fa-share-alt action-icon"></i>
                 </button>
 
+
                 <!-- Renomear -->
                 <button type="button"
-                        th:attr="data-file=${file.name}"
+                        class="rename-btn"
+                        th:attr="data-file=${file.relativePath}"
                         onclick="renameFile(this.getAttribute('data-file'))"
                         title="Renomear">
-                    <i class="fas fa-pen action-icon"></i>
+                    <i class="fas fa-edit action-icon"></i>
                 </button>
+
 
                 <!-- Deletar -->
                 <button type="button"

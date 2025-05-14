@@ -310,10 +310,10 @@ document.getElementById('renameForm').addEventListener('submit', function (event
 function shareFileFromButton(button) {
     const fileName = button.getAttribute("data-file");
 
-    // Crie o link de compartilhamento com base no nome do arquivo
-    const fileLink = `/storage/view/${encodeURIComponent(fileName)}`;
+    // Gera o link de compartilhamento baseado na visualização
+    const fileLink = `${window.location.origin}/view/${encodeURIComponent(fileName)}`;
 
-    // Copie o link para a área de transferência
+    // Copia o link para a área de transferência
     navigator.clipboard.writeText(fileLink)
         .then(() => {
             alert('Link de compartilhamento copiado para a área de transferência!');
@@ -322,6 +322,7 @@ function shareFileFromButton(button) {
             alert('Falha ao copiar o link: ' + err);
         });
 }
+
 
 
 

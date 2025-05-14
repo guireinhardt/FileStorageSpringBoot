@@ -53,6 +53,8 @@
         <tbody>
         <tr th:each="file : ${files}">
             <td th:text="${file.name}"></td>
+
+
             <td>
                 <a href="#" class="btn-view"
                    th:attr="data-file=${currentFolder + '/' + file.name}"
@@ -68,6 +70,15 @@
                 <a href="#" class="btn-download" th:attr="data-file=${file.relativePath}" title="Download">
                     <i class="fas fa-download"></i>
                 </a>
+
+                <button type="button"
+                        class="move-btn"
+                        th:attr="data-file=${file.relativePath}"
+                        onclick="openMoveModal(this)"
+                        title="Mover Arquivo">
+                    <i class="fas fa-folder-open action-icon"></i>
+                </button>
+
 
             </td>
         </tr>
@@ -117,6 +128,14 @@
 
     </div>
 </div>
+<div id="moveModal" style="display:none; position:fixed; top:20%; left:30%; background:white; padding:20px; border:1px solid #ccc; z-index:1000">
+    <h3>Mover Arquivo</h3>
+    <select id="folderSelect"></select>
+    <br><br>
+    <button id="confirmMove">Mover</button>
+    <button onclick="document.getElementById('moveModal').style.display='none'">Cancelar</button>
+</div>
+
 
 <!-- Toast -->
 <div class="toast" id="toast">
@@ -276,6 +295,69 @@ document.querySelectorAll('.btn-download').forEach(link => {
         .catch(err => alert("Erro ao baixar: " + err.message));
     });
 });
+let fileToMove = "";
+
+function openMoveModal(button) {
+    fileToMove = button.getAttribute('data-file');
+
+    fetch('/storage/folders', {
+        headers: {
+            'Authorization': 'Bearer ' + localStorage.getItem('authToken')
+        }
+    })
+    .then(response => response.json())
+    .then(folders => {
+        const folderSelect = document.getElementById('folderSelect');
+        folderSelect.innerHTML = "";
+
+        folders.forEach(folder => {
+            const option = document.createElement('option');
+            option.value = folder;
+            option.textContent = folder;
+            folderSelect.appendChild(option);
+        });
+
+        document.getElementById('moveModal').style.display = 'block';
+    })
+    .catch(err => {
+        console.error("Erro ao buscar pastas:", err);
+        alert("Erro ao carregar pastas.");
+    });
+}
+    window.onload = function () {
+    document.getElementById('confirmMove').onclick = function () {
+        const newFolder = document.getElementById('folderSelect').value;
+
+        const params = new URLSearchParams({
+            fullPath: fileToMove,
+            newFolder: newFolder
+        });
+
+        fetch('/storage/moveFile?' + params.toString(), {
+            method: 'PATCH',
+            headers: {
+                'Authorization': 'Bearer ' + localStorage.getItem('authToken')
+            }
+        })
+        .then(response => {
+            if (response.ok) {
+                alert("Arquivo movido com sucesso!");
+                location.reload();
+            } else {
+                return response.text().then(text => { throw new Error(text); });
+            }
+        })
+        .catch(error => {
+            console.error("Erro ao mover:", error);
+            alert("Erro ao mover arquivo: " + error.message);
+        });
+
+        document.getElementById('moveModal').style.display = 'none';
+    };
+};
+
+// mover pasta
+
 
 
 

@@ -38,6 +38,7 @@ import java.nio.file.StandardCopyOption;
 import java.security.Principal;
 import java.util.*;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipOutputStream;
 
@@ -256,8 +257,43 @@ public class FileStorageController {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();  // Retorna erro interno em caso de falha
         }
     }
+    @GetMapping("/shared/view/**")
+    public ResponseEntity<Resource> sharedViewFile(HttpServletRequest request) {
+        try {
+            String requestURI = request.getRequestURI();
+            String basePath = "/storage/shared/view/";
+            String filePathEncoded = requestURI.substring(requestURI.indexOf(basePath) + basePath.length());
 
+            // Decodifica o caminho
+            String relativePath = URLDecoder.decode(filePathEncoded, StandardCharsets.UTF_8);
 
+            // ✅ Removido o "uploads/" do início, se estiver presente
+            if (relativePath.startsWith("uploads/")) {
+                relativePath = relativePath.substring("uploads/".length());
+            } else if (relativePath.startsWith("uploads\\")) {
+                relativePath = relativePath.substring("uploads\\".length());
+            }
+
+            Resource resource = fileStorageService.loadFileAsResource(relativePath);
+            if (resource == null || !resource.exists()) {
+                return ResponseEntity.notFound().build();
+            }
+
+            String contentType = request.getServletContext().getMimeType(resource.getFile().getAbsolutePath());
+            if (contentType == null) {
+                contentType = "application/octet-stream";
+            }
+
+            return ResponseEntity.ok()
+                    .contentType(MediaType.parseMediaType(contentType))
+                    .header(HttpHeaders.CONTENT_DISPOSITION, "inline; filename=\"" + resource.getFilename() + "\"")
+                    .body(resource);
+
+        } catch (Exception e) {
+            e.printStackTrace();
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+        }
+    }
 
 
     @PostMapping("/bulk-download")
@@ -405,6 +441,64 @@ public class FileStorageController {
         // Substitua essa verificação pelo seu controle real de usuários
         return principal != null && principal.getName().equals("admin");
     }
+
+    @GetMapping("/folders")
+    public ResponseEntity<List<String>> listAllFolders() {
+        Path root = fileListService.getRootLocation();
+        List<String> folders = new ArrayList<>();
+        try (Stream<Path> paths = Files.walk(root)) {
+            paths.filter(Files::isDirectory)
+                    .filter(path -> !path.equals(root)) // ignora o root
+                    .forEach(path -> folders.add(root.relativize(path).toString().replace("\\", "/"))); // normaliza
+            return ResponseEntity.ok(folders);
+        } catch (IOException e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+        }
+    }
+
+    @PatchMapping("/moveFile")
+    public ResponseEntity<?> moveFile(@RequestParam String fullPath, @RequestParam String newFolder) {
+        try {
+            Path root = fileListService.getRootLocation();
+            Path sourcePath = root.resolve(fullPath);
+            String fileName = sourcePath.getFileName().toString();
+            Path targetPath = root.resolve(newFolder).resolve(fileName);
+
+            Files.createDirectories(targetPath.getParent());
+            Files.move(sourcePath, targetPath, StandardCopyOption.REPLACE_EXISTING);
+
+            return ResponseEntity.ok("Arquivo movido com sucesso!");
+        } catch (IOException e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Erro ao mover o arquivo: " + e.getMessage());
+        }
+    }
+    @PatchMapping("/moveFolder")
+    public ResponseEntity<?> moveFolder(@RequestParam String fullPath, @RequestParam String newParentFolder) {
+        try {
+            Path rootLocation = fileListService.getRootLocation();
+            Path sourcePath = rootLocation.resolve(fullPath).normalize();
+            Path targetPath = rootLocation.resolve(newParentFolder).resolve(sourcePath.getFileName()).normalize();
+
+            if (!Files.exists(sourcePath) || !Files.isDirectory(sourcePath)) {
+                return ResponseEntity.status(HttpStatus.NOT_FOUND).body("Pasta de origem não encontrada.");
+            }
+
+            if (!Files.exists(targetPath.getParent())) {
+                Files.createDirectories(targetPath.getParent());
+            }
+
+            Files.move(sourcePath, targetPath, StandardCopyOption.REPLACE_EXISTING);
+
+            return ResponseEntity.ok("Pasta movida com sucesso.");
+        } catch (IOException e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Erro ao mover a pasta: " + e.getMessage());
+        }
+    }
+
+
+
+
+
 
 
 }

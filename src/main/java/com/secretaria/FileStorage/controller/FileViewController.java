@@ -382,6 +382,31 @@ public class FileViewController {
         }
         return "";  // Retorna uma string vazia se não houver extensão
     }
+    @PatchMapping("/storage/search/renameFile")
+    public ResponseEntity<?> renameFileFromSearch(@RequestParam String fullPath, @RequestParam String newName) {
+        try {
+            Path rootLocation = fileStorageConfig.getUploadDirPath();
+
+            // Caminho completo do arquivo atual
+            Path sourcePath = rootLocation.resolve(fullPath).normalize();
+
+            // Validação de segurança (opcional)
+            if (!sourcePath.startsWith(rootLocation)) {
+                return ResponseEntity.status(HttpStatus.FORBIDDEN).body("Acesso negado.");
+            }
+
+            // Novo caminho (mantendo o diretório original, apenas troca o nome)
+            Path targetPath = sourcePath.getParent().resolve(newName).normalize();
+
+            Files.move(sourcePath, targetPath);
+
+            return ResponseEntity.ok().body("Arquivo renomeado com sucesso");
+        } catch (IOException e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body("Erro ao renomear o arquivo: " + e.getMessage());
+        }
+    }
+
 
 
     @ExceptionHandler(Exception.class)
@@ -428,6 +453,36 @@ public class FileViewController {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
         }
     }
+    //download pagina de busca
+    @GetMapping("/download/**")
+    public ResponseEntity<Resource> downloadFileSearch(HttpServletRequest request) {
+        String uri = request.getRequestURI(); // Ex: /download/uploads/2024/maio/arquivo.pdf
+        String basePath = "/download/";
+        String encodedPath = uri.substring(uri.indexOf(basePath) + basePath.length());
+
+        // Decodifica a URL
+        String relativePath = URLDecoder.decode(encodedPath, StandardCharsets.UTF_8);
+
+        // Remove o prefixo "uploads/" se existir, pois uploadDir já aponta para a raiz
+        if (relativePath.startsWith("uploads/") || relativePath.startsWith("uploads\\")) {
+            relativePath = relativePath.substring("uploads/".length());
+        } else {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
+        }
+
+        try {
+            Resource resource = fileStorageService.loadFileAsResource(relativePath);
+            return ResponseEntity.ok()
+                    .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"" + resource.getFilename() + "\"")
+                    .contentType(MediaType.APPLICATION_OCTET_STREAM)
+                    .body(resource);
+        } catch (FileStorageNotFoundException e) {
+            return ResponseEntity.notFound().build();
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+        }
+    }
+
 
     //compartilhamento publico
     @GetMapping("/storage/view/{fileName}")

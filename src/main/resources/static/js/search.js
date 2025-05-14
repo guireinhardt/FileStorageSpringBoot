@@ -2,7 +2,10 @@
 function shareFileFromButton(button) {
     const fileName = button.getAttribute('data-file');
     const baseUrl = window.location.origin;
-    const shareUrl = `${baseUrl}/storage/viewFile/${encodeURIComponent(fileName)}`;
+    // Codifica parte por parte, preservando as barras
+    const relativePath = fileName.split('/').map(encodeURIComponent).join('/');
+    const shareUrl = `${baseUrl}/storage/shared/view/${relativePath}`;
+
 
     navigator.clipboard.writeText(shareUrl).then(function () {
         showToast(`Link copiado!`);
@@ -10,6 +13,8 @@ function shareFileFromButton(button) {
         showToast("Erro ao copiar link: " + err);
     });
 }
+
+
 
 // Exibe um toast animado
 function showToast(message) {
@@ -21,6 +26,22 @@ function showToast(message) {
         toast.classList.remove("show");
     }, 4000); // some depois de 4 segundos
 }
+
+//download unico
+document.querySelectorAll('.btn-download').forEach(link => {
+    link.addEventListener('click', e => {
+        e.preventDefault();
+        const filePath = e.currentTarget.getAttribute('data-file');
+        const encodedPath = filePath
+            .split('/')
+            .map(encodeURIComponent)
+            .join('/');
+        const downloadUrl = `/download/${encodedPath}`;
+        window.open(downloadUrl, '_blank');
+    });
+});
+
+
 
 // Submeter múltiplos downloads
 const bulkDownloadForm = document.getElementById('bulkDownloadForm');
@@ -65,15 +86,22 @@ bulkDownloadForm.addEventListener('submit', function(e) {
 
 
 // Função de renomear (Exemplo)
-function renameFile(fileName) {
-    const newFileName = prompt("Digite o novo nome para o arquivo:", fileName);
-    if (newFileName) {
+function renameFile(filePath) {
+    const parts = filePath.split('/');
+    const currentFileName = parts.pop();
+    const directoryPath = parts.join('/');
+    const newFileName = prompt("Digite o novo nome para o arquivo:", currentFileName);
+
+    if (newFileName && newFileName !== currentFileName) {
+        // Remove "uploads/" do início, pois o backend já adiciona esse caminho base
+        const cleanPath = filePath.startsWith("uploads/") ? filePath.substring(8) : filePath;
+
         const params = new URLSearchParams({
-            oldName: fileName,
+            fullPath: cleanPath,  // <- sem o "uploads/" duplicado
             newName: newFileName
         });
 
-        fetch('/storage/renameFile?' + params.toString(), {
+        fetch('/storage/search/renameFile?' + params.toString(), {
             method: 'PATCH',
             headers: {
                 'Authorization': 'Bearer ' + localStorage.getItem('authToken')
@@ -84,7 +112,10 @@ function renameFile(fileName) {
                 alert("Arquivo renomeado com sucesso!");
                 location.reload();
             } else {
-                alert("Erro ao renomear o arquivo.");
+                return response.text().then(text => {
+                    console.error("Erro ao renomear:", text);
+                    alert("Erro ao renomear o arquivo:\n" + text);
+                });
             }
         })
         .catch(error => {
@@ -93,7 +124,6 @@ function renameFile(fileName) {
         });
     }
 }
-
 
 // Função de deletar
 // Função de deletar
