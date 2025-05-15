@@ -256,5 +256,11 @@ td i:hover {
 .btn-voltar i {
     margin-right: 8px;
 }
+.selected-folder {
+    border: 2px solid red;
+    border-radius: 5px;
+    background-color: #ffe6e6;
+}
+
 
 

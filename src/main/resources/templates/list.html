@@ -39,11 +39,24 @@
     <!-- Pastas -->
     <h2>Pastas</h2>
     <div class="folder-grid">
-        <a th:each="folder : ${folders}" class="folder" th:href="@{/storage/openFolder/{folderName}(folderName=${folder.name})}">
-            <i class="fas fa-folder fa-lg"></i>
-            <span th:text="${folder.name}"></span>
-        </a>
+        <div th:each="folder : ${folders}" class="folder" style="position: relative;">
+            <a th:href="@{/storage/openFolder/{folderName}(folderName=${folder.name})}">
+                <i class="fas fa-folder fa-lg"></i>
+                <span th:text="${folder.name}"></span>
+            </a>
+
+            <!-- Ícone de três pontinhos para ações -->
+            <i class="fas fa-ellipsis-v" style="cursor: pointer; position: absolute; right: 5px; top: 5px;"
+               onclick="toggleActions(this)"></i>
+
+            <!-- Menu dropdown -->
+            <div class="dropdown-content" style="display: none; position: absolute; right: 5px; top: 25px; background-color: white; border: 1px solid #ccc; z-index: 100;">
+                <a href="#" th:attr="data-folder=${folder.name}" onclick="moveFolder(this)">Mover pasta</a>
+            </div>
+        </div>
+
     </div>
+
 
     <!-- Arquivos -->
     <h2>Arquivos</h2>
@@ -71,6 +84,7 @@
         </tr>
         </tbody>
     </table>
+</div>
 </div>
 
 <!-- Barra de progresso -->
@@ -108,10 +122,28 @@
         </form>
     </div>
 </div>
+<!-- Modal de mover pasta -->
+<div id="moveModal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background: rgba(0,0,0,0.5); z-index:9999; justify-content:center; align-items:center;">
+    <div style="background:white; padding:20px; border-radius:8px; min-width:300px; position:relative;">
+        <h3>Mover pasta: <span id="modalFolderName"></span></h3>
+        <label for="destinationSelect">Mover para:</label>
+        <select id="destinationSelect" style="width:100%; padding:5px; margin-top:5px;">
+            <!-- opções serão preenchidas dinamicamente -->
+        </select>
+        <div style="margin-top: 15px; text-align: right;">
+            <button onclick="closeModal()">Cancelar</button>
+            <button onclick="confirmMove()">Mover</button>
+        </div>
+    </div>
+</div>
+
 
 <div class="footer">
     &copy; 2025 MeuDrive - Todos os direitos reservados
 </div>
+<script th:inline="javascript">
+    let availableFolders = [[${folders}]].map(f => f.name);
+</script>
 
 <script>
     // Toggle do menu do usuário
@@ -322,10 +354,99 @@ function shareFileFromButton(button) {
             alert('Falha ao copiar o link: ' + err);
         });
 }
+    let moveMode = false;
 
+function toggleMoveFolderMode() {
+    moveMode = !moveMode;
 
+    // Mostra ou oculta os botões de mover por pasta
+    document.querySelectorAll('.btn-move-folder').forEach(btn => {
+        btn.style.display = moveMode ? 'inline-block' : 'none';
+    });
 
+    // Atualiza o texto ou cor do botão
+    document.getElementById("moveModeStatus").style.display = moveMode ? 'inline' : 'none';
 
+    document.getElementById("toggleMoveMode").textContent = moveMode
+        ? "Desativar Modo Mover"
+        : "Ativar Modo Mover";
+}
+
+// Ação ao clicar para mover a pasta
+let folderToMove = "";
+let currentFolderPath = "";
+
+function moveFolder(link) {
+    folderToMove = link.getAttribute("data-folder");
+    currentFolderPath = document.getElementById("folderPath").value;
+
+    document.getElementById("modalFolderName").innerText = folderToMove;
+
+    const select = document.getElementById("destinationSelect");
+    select.innerHTML = "";
+
+    availableFolders
+        .filter(folder => folder !== folderToMove)
+        .forEach(folder => {
+            const option = document.createElement("option");
+            option.value = folder;
+            option.textContent = folder;
+            select.appendChild(option);
+        });
+
+    document.getElementById("moveModal").style.display = "flex";
+}
+
+function closeModal() {
+    document.getElementById("moveModal").style.display = "none";
+}
+
+function confirmMove() {
+    const targetFolder = document.getElementById("destinationSelect").value;
+    const fullPath = `${currentFolderPath}/${folderToMove}`;
+
+    fetch(`/storage/moveFolder?fullPath=${encodeURIComponent(fullPath)}&newParentFolder=${encodeURIComponent(targetFolder)}`, {
+        method: "PATCH"
+    })
+    .then(res => {
+        if (!res.ok) throw new Error("Erro ao mover pasta");
+        return res.text();
+    })
+    .then(data => {
+        alert("Pasta movida com sucesso!");
+        location.reload();
+    })
+    .catch(err => {
+        console.error("Erro:", err);
+        alert("Erro inesperado.");
+    });
+
+    closeModal();
+}
+
+// Ícone de menu (três pontos)
+function toggleActions(icon) {
+    const dropdown = icon.nextElementSibling;
+
+    // Fecha todos os outros menus abertos
+    document.querySelectorAll(".dropdown-content").forEach(menu => {
+        if (menu !== dropdown) {
+            menu.style.display = "none";
+        }
+    });
+
+    // Alterna visibilidade do menu clicado
+    dropdown.style.display = dropdown.style.display === "block" ? "none" : "block";
+}
+
+// Fecha dropdown se clicar fora
+document.addEventListener("click", function(event) {
+    if (!event.target.closest(".folder")) {
+        document.querySelectorAll(".dropdown-content").forEach(menu => {
+            menu.style.display = "none";
+        });
+    }
+});
 
 
 </script>
