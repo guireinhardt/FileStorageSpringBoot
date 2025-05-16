@@ -53,6 +53,13 @@
             <div class="dropdown-content" style="display: none; position: absolute; right: 5px; top: 25px; background-color: white; border: 1px solid #ccc; z-index: 100;">
                 <a href="#" th:attr="data-folder=${folder.name}" onclick="moveFolder(this)">Mover pasta</a>
             </div>
+            <!-- Botão de download com ícone -->
+            <i class="fas fa-download"
+               title="Baixar pasta"
+               style="cursor: pointer; margin-left: 10px; color: #007bff;"
+               th:attr="data-folder-name=${folder.name}"
+               onclick="handleDownload(this)"></i>
+
         </div>
 
     </div>
@@ -160,6 +167,21 @@ window.addEventListener('click', function(e) {
         menu.style.display = "none";
     }
 });
+document.addEventListener('DOMContentLoaded', function () {
+    window.addEventListener('click', function (e) {
+        const menu = document.getElementById("dropdownMenu");
+        const icon = document.querySelector(".user-icon");
+        if (!icon.contains(e.target)) {
+            menu.style.display = "none";
+        }
+    });
+
+    document.querySelector(".user-icon").addEventListener('click', function () {
+        const dropdown = document.getElementById("dropdownMenu");
+        dropdown.style.display = (dropdown.style.display === "block") ? "none" : "block";
+    });
+});
+
 
     // Botão flutuante abre o modal de Nova Pasta
     document.getElementById("btnNovaPasta").addEventListener("click", function () {
@@ -447,6 +469,31 @@ document.addEventListener("click", function(event) {
         });
     }
 });
+
+    function downloadFolder(folderName) {
+    fetch(`/storage/downloadFolder?folderPath=${encodeURIComponent(folderName)}`, {
+        method: 'GET',
+        credentials: 'include'
+    })
+    .then(res => res.blob())
+    .then(blob => {
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = folderName + ".zip";
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
+    })
+    .catch(err => alert("Erro ao baixar pasta."));
+}
+    function handleDownload(element) {
+    const folderName = element.getAttribute('data-folder-name');
+    downloadFolder(folderName);
+}
+
+
+
 
 
 </script>

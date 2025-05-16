@@ -14,6 +14,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.io.ByteArrayResource;
 import org.springframework.core.io.InputStreamResource;
 import org.springframework.core.io.Resource;
+import org.springframework.core.io.UrlResource;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
@@ -31,10 +32,8 @@ import org.springframework.web.util.UriUtils;
 import java.io.*;
 import java.net.URLDecoder;
 import java.nio.charset.StandardCharsets;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
-import java.nio.file.StandardCopyOption;
+import java.nio.file.*;
+import java.nio.file.attribute.BasicFileAttributes;
 import java.security.Principal;
 import java.util.*;
 import java.util.stream.Collectors;
@@ -494,13 +493,51 @@ public class FileStorageController {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Erro ao mover a pasta: " + e.getMessage());
         }
     }
+    @GetMapping("/downloadFolder")
+    public ResponseEntity<Resource> downloadFolder(@RequestParam String folderPath) {
+        try {
+            Path rootLocation = fileListService.getRootLocation();
+            Path folderToZip = rootLocation.resolve(Paths.get(folderPath)).normalize();
+
+            if (!folderToZip.startsWith(rootLocation)) {
+                // Tentativa de acessar fora da pasta raiz
+                return ResponseEntity.badRequest().build();
+            }
 
 
+            Path zipPath = Files.createTempFile("folder-", ".zip");
+
+            try (ZipOutputStream zs = new ZipOutputStream(Files.newOutputStream(zipPath))) {
+                Files.walkFileTree(folderToZip, new SimpleFileVisitor<>() {
+                    @Override
+                    public FileVisitResult visitFile(Path file, BasicFileAttributes attrs) throws IOException {
+                        Path relativePath = folderToZip.relativize(file);
+                        ZipEntry zipEntry = new ZipEntry(folderToZip.getFileName() + "/" + relativePath.toString());
+                        System.out.println("Adicionando arquivo: " + file);
+                        zs.putNextEntry(zipEntry);
+                        Files.copy(file, zs);
+                        zs.closeEntry();
+                        return FileVisitResult.CONTINUE;
+                    }
+                });
+            }
 
 
+            Resource resource = new UrlResource(zipPath.toUri());
 
+            return ResponseEntity.ok()
+                    .contentType(MediaType.APPLICATION_OCTET_STREAM)
+                    .header(HttpHeaders.CONTENT_DISPOSITION,
+                            "attachment; filename=\"" + folderToZip.getFileName() + ".zip\"")
+                    .body(resource);
 
+        } catch (IOException e) {
+            return ResponseEntity.internalServerError().build();
+        }
+    }
 
 }
+
+
 
 
