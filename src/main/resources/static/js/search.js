@@ -79,8 +79,8 @@ bulkDownloadForm.addEventListener('submit', function(e) {
         a.remove();
     })
     .catch(error => {
-        console.error('Erro:', error);
-        alert('Ocorreu um erro ao baixar os arquivos.');
+        console.error('Erro no fetch:', error);
+        alert('Erro ao baixar: ' + error.message);
     });
 });
 

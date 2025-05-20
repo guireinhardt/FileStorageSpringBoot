@@ -298,9 +298,16 @@ public class FileStorageController {
     @PostMapping("/bulk-download")
     public ResponseEntity<Resource> bulkDownload(@RequestParam("selectedFiles") List<String> selectedFiles) throws IOException {
         File tempZip = File.createTempFile("arquivos-", ".zip");
-        try (ZipOutputStream zos = new ZipOutputStream(new FileOutputStream(tempZip))) {
 
+        try (ZipOutputStream zos = new ZipOutputStream(new FileOutputStream(tempZip))) {
             for (String fileName : selectedFiles) {
+                // Remove o prefixo "uploads/" se existir para evitar duplicidade
+                if (fileName.startsWith("uploads/")) {
+                    fileName = fileName.substring("uploads/".length());
+                } else if (fileName.startsWith("/uploads/")) {
+                    fileName = fileName.substring("/uploads/".length());
+                }
+
                 Resource resource = fileStorageService.loadFileAsResource(fileName);
                 if (resource.exists()) {
                     zos.putNextEntry(new ZipEntry(resource.getFilename()));
@@ -314,17 +321,17 @@ public class FileStorageController {
                     zos.closeEntry();
                 }
             }
-
+        }
 
         Resource zipResource = new DeletableInputStreamResource(tempZip);
-
         return ResponseEntity.ok()
                 .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"arquivos.zip\"")
                 .contentType(MediaType.APPLICATION_OCTET_STREAM)
                 .contentLength(tempZip.length())
                 .body(zipResource);
     }
-}
+
+
 
 
     //rota para renderizar o create Folder

@@ -1,218 +1,185 @@
 body {
     font-family: Arial, sans-serif;
-    background: #f2f2f2;
+    background-color: #F5F5F5;
+    color: #424242;
     margin: 0;
     padding: 0;
 }
 
-header {
-    background-color: #3498db;
+.custom-header {
+    background-color: #1B5E20;
     padding: 15px;
     text-align: center;
 }
 
-.logo-img {
-    height: 60px;
+header img {
+    max-height: 80px;
 }
 
+
+/* Formulário de busca
+form.bg-light {
+    background-color: #FFFFFF !important;
+    border: 1px solid #E0E0E0;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+} */
+/* Container da busca */
 .form-container {
-    background: white;
+    background-color: #ffffff;
     padding: 20px;
     margin: 20px auto;
-    width: 90%;
-    max-width: 600px;
-    border-radius: 10px;
+    width: 100%;
+    max-width: 800px;  /* Aumentei um pouco para mais espaço */
+    border-radius: 12px; /* Bordas arredondadas do container */
     box-shadow: 0px 4px 10px rgba(0, 0, 0, 0.1);
 }
 
-.search-form input, .search-form select, .search-form button {
-    display: block;
-    width: 100%;
+/* Formulário de busca */
+.form-container .form-control,
+.form-container .form-select {
+    border-radius: 8px; /* Bordas arredondadas nos campos de input/select */
     margin-top: 10px;
     padding: 10px;
     font-size: 16px;
 }
 
-.search-form button {
-    background-color: #3498db;
-    color: white;
-    border: none;
-    cursor: pointer;
-}
-
-.search-form button:hover {
-    background-color: #2980b9;
-}
-
-.results {
-    margin: 20px auto;
-    width: 90%;
-    max-width: 800px;
-    background: white;
-    padding: 20px;
-    border-radius: 10px;
-}
-
-.buttons-bar {
-    margin-bottom: 15px;
-    text-align: right;
-}
-
-.bulk-download-btn {
-    background-color: #2ecc71;
-    border: none;
-    padding: 10px 20px;
-    color: white;
-    border-radius: 5px;
-    cursor: pointer;
-}
-
-.bulk-download-btn:hover {
-    background-color: #27ae60;
-}
-
-.file-list {
-    list-style: none;
-    padding: 0;
-}
-
-.file-list li {
+/* Alinhamento dos campos dentro do formulário */
+.form-container .row {
     display: flex;
-    align-items: center;
-    padding: 10px 0;
-    border-bottom: 1px solid #eee;
-    position: relative;
+    flex-wrap: wrap;  /* Para garantir que a linha envolva e não ultrapasse */
+    gap: 15px; /* Espaçamento entre os campos */
 }
 
-.file-checkbox {
-    margin-right: 10px;
+/* Estilos individuais para os campos */
+.form-container .col-md-6,
+.form-container .col-md-4 {
+    flex: 1;  /* Faz com que os campos se estendam igualmente */
+    min-width: 200px;  /* Garante que os campos não fiquem muito estreitos em telas menores */
+}
+
+/* Botão de busca */
+.form-container .btn-primary {
+    background-color: #1B5E20; /* Verde escuro */
+    border-color: #1B5E20;
+    color: white;
+    border-radius: 8px;  /* Arredondamento no botão */
+    padding: 10px 20px;
+    font-weight: 600;
+}
+
+.form-container .btn-primary:hover {
+    background-color: #145A16; /* Tom mais escuro no hover */
+    border-color: #0D4D0D;
+}
+
+/* Estilo do título */
+.form-container h2 {
+    font-size: 24px;
+    margin-bottom: 20px;
+}
+/* Campo de busca (texto grande) */
+.input-texto {
+    width: 100%;
+    min-width: 300px;
+    flex: 2; /* ocupa mais espaço se estiver dentro de flex */
+}
+
+/* Selects pequenos */
+.input-select-pequeno {
+    min-width: 160px;
+    max-width: 220px;
+}
+
+/* Campos de data compactos */
+.input-data {
+    min-width: 140px;
+    max-width: 180px;
+}
+
+/* Garante espaçamento entre os campos */
+.form-container .row > div {
+    margin-bottom: 12px;
+}
+
+
+/* Botão principal de busca */
+.btn-primary {
+    background-color: #1565C0;
+    border-color: #1565C0;
+}
+
+.btn-primary:hover {
+    background-color: #0D47A1;
+    border-color: #0D47A1;
+}
+
+/* Botão de sucesso (baixar selecionados) */
+.custom-yellow-btn {
+    background-color: #FBC02D;   /* amarelo trigo */
+        border-color: #F9A825;       /* tom mais escuro */
+        color: #212121;              /* texto escuro para contraste */
+        border-radius: 8px;          /* bordas arredondadas */
+        padding: 10px 20px;          /* espaço interno confortável */
+        font-weight: 600;
+}
+
+.custom-yellow-btn:hover {
+    background-color: #F9A825;
+    border-color: #F57F17;
+    color: #000000;
+}
+
+/* Botões de ação (visualizar, compartilhar, etc.) */
+.btn-outline-secondary {
+    border-color: #BDBDBD;
+    color: #424242;
+}
+
+.btn-outline-secondary:hover {
+    background-color: #FFF8E1;
+    color: #2E7D32;
+    border-color: #A1887F;
+}
+
+/* Botão de deletar */
+.btn-outline-danger:hover {
+    background-color: #ffcdd2;
+    color: #C62828;
+}
+
+/* Resultados da busca */
+.list-group-item {
+    background-color: #FFFFFF;
+    border-color: #E0E0E0;
 }
 
 .file-name {
-    flex-grow: 1;
+    overflow-wrap: anywhere;
+    color: #424242;
 }
 
-.action-icon {
-    margin-left: 10px;
-    font-size: 18px;
-    color: #3498db;
-    cursor: pointer;
+/* Voltar ao início */
+.btn-outline-secondary:hover {
+    background-color: #E0E0E0;
 }
 
-.action-icon:hover {
-    color: #2980b9;
-}
-
-.share-btn {
-    background: none;
-    border: none;
-    padding: 0;
-}
-
-.back-button {
-    margin-top: 20px;
-    text-align: center;
-}
-
-.back-link {
-    text-decoration: none;
-    color: #3498db;
-    font-size: 18px;
-}
-
-.back-link:hover {
-    text-decoration: underline;
-}
-
+/* Toast de feedback */
 .toast {
+    background-color: #424242;
+    color: #FFFFFF;
+    padding: 16px;
+    border-radius: 6px;
+    font-size: 14px;
     position: fixed;
     bottom: 20px;
     right: 20px;
-    background-color: #333;
-    color: #fff;
-    padding: 16px 20px;
-    border-radius: 8px;
-    box-shadow: 0 2px 8px rgba(0,0,0,0.3);
     z-index: 9999;
     opacity: 0;
     transform: translateY(20px);
     transition: opacity 0.3s ease, transform 0.3s ease;
-    font-size: 14px;
-    max-width: 300px;
-    word-break: break-all;
 }
 
 .toast.show {
     opacity: 1;
     transform: translateY(0);
 }
-
-/* Estilo básico para o menu de opções */
-.options-menu {
-    display: none; /* Inicialmente oculto */
-    position: absolute;
-    background-color: white;
-    border: 1px solid #ddd;
-    padding: 10px;
-    border-radius: 5px;
-    box-shadow: 0 2px 10px rgba(0,0,0,0.2);
-    z-index: 100;
-}
-
-.options-menu a {
-    display: block;
-    padding: 8px;
-    text-decoration: none;
-    color: black;
-}
-
-.options-menu a:hover {
-    background-color: #f4f4f4;
-}
-
-/* Estilo para o botão de opções */
-.options-btn {
-    background-color: transparent;
-    border: none;
-    cursor: pointer;
-    padding: 5px;
-}
-/* Estilo geral dos ícones de ação */
-.action-icon {
-    margin-left: 10px;
-    font-size: 18px;
-    color: #333;
-    cursor: pointer;
-    transition: color 0.3s ease;
-}
-
-/* Hover dos ícones */
-.action-icon:hover {
-    color: #4FC3F7; /* Azul claro no hover */
-}
-
-/* Botões de ação como ícones (sem borda ou fundo) */
-.file-list button {
-    background: none;
-    border: none;
-    padding: 0;
-    margin-left: 10px;
-    cursor: pointer;
-    vertical-align: middle;
-}
-
-/* Alinhar os elementos do item da lista */
-.file-list li {
-    display: flex;
-    align-items: center;
-    padding: 10px;
-    border-bottom: 1px solid #ddd;
-}
-
-/* Nome do arquivo com espaço entre os ícones */
-.file-name {
-    flex-grow: 1;
-    margin-left: 10px;
-    overflow-wrap: anywhere;
-}
-

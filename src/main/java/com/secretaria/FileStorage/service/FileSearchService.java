@@ -9,10 +9,15 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
-import java.util.Set;
+import java.nio.file.attribute.BasicFileAttributes;
+import java.nio.file.attribute.FileTime;
+import java.time.LocalDate;
+import java.time.ZoneId;
+import java.time.format.DateTimeFormatter;
+import java.time.format.DateTimeParseException;
+import java.util.*;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
@@ -27,26 +32,80 @@ public class FileSearchService {
         this.fileStorageLocation = fileStorageConfig.getUploadDir();
     }
 
-    public List<FileResultDTO> searchFiles(String query) throws IOException {
-        List<String> queryTerms = Arrays.stream(query.toLowerCase().split("\\s+"))
-                .filter(term -> !term.isBlank())
-                .collect(Collectors.toList());
+    public List<FileResultDTO> searchFiles(
+            String query,     // texto livre, pode ser nome do arquivo ou palavras
+            String keyword,   // palavra-chave (ex: campo específico)
+            String institute,
+            String city,
+            LocalDate startDate,
+            LocalDate endDate) throws IOException {
+
+        List<String> queryTerms = (query == null || query.isBlank()) ?
+                Collections.emptyList() :
+                Arrays.stream(query.toLowerCase().split("\\s+"))
+                        .filter(term -> !term.isBlank())
+                        .collect(Collectors.toList());
 
         try (Stream<Path> paths = Files.walk(Paths.get(fileStorageLocation))) {
             return paths
                     .filter(Files::isRegularFile)
-                    // Ignora arquivos dentro de qualquer subpasta "lixeira"
-                    .filter(path -> StreamSupport.stream(path.spliterator(), false)
-                            .noneMatch(part -> part.toString().equalsIgnoreCase("lixeira")))
-                    // Filtra arquivos que contenham todos os termos no nome
+                    .filter(path -> !path.toString().toLowerCase().contains("lixeira"))
                     .filter(path -> {
                         String fileName = path.getFileName().toString().toLowerCase();
-                        return queryTerms.stream().allMatch(fileName::contains);
+
+                        // Busca por query/texto livre no nome do arquivo
+                        if (!queryTerms.isEmpty() &&
+                                queryTerms.stream().anyMatch(term -> !fileName.contains(term))) {
+                            return false;
+                        }
+
+                        // Busca pela palavra-chave (keyword)
+                        if (keyword != null && !keyword.isBlank() && !fileName.contains(keyword.toLowerCase())) {
+                            return false;
+                        }
+
+                        // Busca pelo instituto
+                        if (institute != null && !institute.isBlank() && !fileName.contains(institute.toLowerCase())) {
+                            return false;
+                        }
+
+                        // Busca pela cidade
+                        if (city != null && !city.isBlank() && !fileName.contains(city.toLowerCase())) {
+                            return false;
+                        }
+
+                        // Busca pela data no começo do nome do arquivo
+                        if (startDate != null || endDate != null) {
+                            try {
+                                String fileNameOriginal = path.getFileName().toString();
+                                // Extrai os números do início para tentar pegar a data
+                                String prefix = fileNameOriginal.replaceAll("[^0-9]", "");
+                                LocalDate fileDate = null;
+
+                                if (prefix.length() >= 8) {
+                                    fileDate = LocalDate.parse(prefix.substring(0, 8), DateTimeFormatter.ofPattern("yyyyMMdd"));
+                                } else if (prefix.length() >= 6) {
+                                    fileDate = LocalDate.parse(prefix.substring(0, 6), DateTimeFormatter.ofPattern("yyMMdd"));
+                                } else {
+                                    return false;
+                                }
+
+                                if ((startDate != null && fileDate.isBefore(startDate)) ||
+                                        (endDate != null && fileDate.isAfter(endDate))) {
+                                    return false;
+                                }
+
+                            } catch (Exception e) {
+                                // Se não conseguir extrair data, descarta o arquivo quando filtro de data existe
+                                return false;
+                            }
+                        }
+
+                        return true;
                     })
-                    // Mapeia para DTO com nome simples e caminho completo
                     .map(path -> new FileResultDTO(
-                            path.getFileName().toString(),   // Só o nome
-                            path.toAbsolutePath().toString() // Caminho completo
+                            path.getFileName().toString(),
+                            path.toAbsolutePath().toString()
                     ))
                     .collect(Collectors.toList());
         }
@@ -130,13 +189,40 @@ public class FileSearchService {
      * Método auxiliar para extrair a data do nome do arquivo.
      * Procura 8 dígitos seguidos (ex: 20250428) no nome do arquivo.
      */
-    private String extractDateFromFileName(String fileName) {
-        String onlyNumbers = fileName.replaceAll("[^0-9]", "");
-        if (onlyNumbers.length() >= 8) {
-            return onlyNumbers.substring(0, 8); // Pega os primeiros 8 dígitos
+    private LocalDate extractDateFromFilename(String filename) {
+        Pattern pattern = Pattern.compile("(\\d{2,4})[-/](\\d{2})[-/](\\d{2})");
+        Matcher matcher = pattern.matcher(filename);
+
+        if (matcher.find()) {
+            String yearPart = matcher.group(1);
+            String monthPart = matcher.group(2);
+            String dayPart = matcher.group(3);
+
+            try {
+                int year = Integer.parseInt(yearPart);
+                int month = Integer.parseInt(monthPart);
+                int day = Integer.parseInt(dayPart);
+
+                if (year < 100) {
+                    year += 2000;
+                }
+
+                LocalDate result = LocalDate.of(year, month, day);
+                System.out.println("✔ Data extraída do nome do arquivo '" + filename + "': " + result);
+                return result;
+
+            } catch (Exception e) {
+                System.out.println("❌ Erro ao processar data no arquivo: " + filename + " - " + e.getMessage());
+                return null;
+            }
+        } else {
+            System.out.println("⚠️ Nenhuma data encontrada no nome do arquivo: " + filename);
         }
+
         return null;
     }
+
+
 
 
 

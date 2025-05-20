@@ -12,7 +12,7 @@ import java.util.stream.Stream;
 
 
 @Component
-@PropertySource("classpath:keywords.properties") // Especifica o arquivo de propriedades
+@PropertySource("classpath:keywords.properties") // Lê o arquivo keywords.properties
 public class KeywordConfig {
 
     @Value("${keywords}")
@@ -22,11 +22,14 @@ public class KeywordConfig {
 
     @PostConstruct
     public void init() {
-        keywordList = Arrays.asList(keywords.split(","));
+        // Remove espaços em branco e gera a lista de keywords
+        keywordList = Arrays.stream(keywords.split(","))
+                .map(String::trim)
+                .collect(Collectors.toList());
     }
 
     public List<String> getKeywordList() {
-        return Stream.of(keywords.split(","))
-                .collect(Collectors.toList());
+        return keywordList;
     }
 }
+

@@ -6,7 +6,7 @@ import java.util.List;
 
 @Service
 public class CityService {
-    public List<String> getAllCitiesOfSaoPaulo() {
+    public List<String> getAllCities() {
         return List.of(
                 "São Paulo", "Campinas", "Santos", "São José dos Campos",
                 "Ribeirão Preto", "Sorocaba", "Bauru", "São Carlos"

@@ -13,6 +13,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.io.FileSystemResource;
 import org.springframework.core.io.Resource;
 import org.springframework.core.io.UrlResource;
+import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
@@ -26,9 +27,7 @@ import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.servlet.HandlerMapping;
 
 
-import java.io.File;
-import java.io.IOException;
-import java.io.UnsupportedEncodingException;
+import java.io.*;
 import java.net.MalformedURLException;
 import java.net.URLDecoder;
 import java.net.URLEncoder;
@@ -36,6 +35,7 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.time.LocalDate;
 import java.util.*;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -61,14 +61,12 @@ public class FileViewController {
 
     private final FileViewService fileViewService;
     private final FileStorageConfig fileStorageConfig;
+
     @Autowired
     public FileViewController(FileViewService fileViewService, FileStorageConfig fileStorageConfig) {
         this.fileViewService = fileViewService;
         this.fileStorageConfig = fileStorageConfig;
     }
-
-
-
 
 
     @GetMapping("/upload")
@@ -120,7 +118,6 @@ public class FileViewController {
 
         return "list"; // Retorna o nome do template a ser renderizado
     }
-
 
 
     @GetMapping("/storage/openFolder/**")
@@ -183,43 +180,45 @@ public class FileViewController {
     private CityService cityService;
 
     @GetMapping("/search")
-    public String search(@RequestParam(required = false) String query,
-                         @RequestParam(required = false) String keyword,
-                         @RequestParam(required = false) String subkeyword,
-                         @RequestParam(required = false) String city,
-                         @RequestParam(required = false) String institute,
-                         Model model) {
+    public String searchFiles(
+            @RequestParam(required = false) String query,
+            @RequestParam(required = false) String keyword,
+            @RequestParam(required = false) String institute,
+            @RequestParam(required = false) String city,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate startDate,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate endDate,
+            Model model) throws IOException {
+        boolean hasFilters = (query != null && !query.isBlank())
+                || (keyword != null && !keyword.isBlank())
+                || (institute != null && !institute.isBlank())
+                || (city != null && !city.isBlank())
+                || startDate != null
+                || endDate != null;
 
-        StringBuilder fullQuery = new StringBuilder();
-        if (query != null && !query.isEmpty()) fullQuery.append(query.trim()).append(" ");
-        if (keyword != null && !keyword.isEmpty()) fullQuery.append(keyword.trim()).append(" ");
-        if (subkeyword != null && !subkeyword.isEmpty()) fullQuery.append(subkeyword.trim()).append(" ");
-        if (city != null && !city.isEmpty()) fullQuery.append(city.trim()).append(" ");
-        if (institute != null && !institute.isEmpty()) fullQuery.append(institute.trim()).append(" ");
+        List<FileResultDTO> results = new ArrayList<>();
 
-        List<FileResultDTO> files = new ArrayList<>();
-        if (!fullQuery.toString().trim().isEmpty()) {
-            try {
-                files = fileSearchService.searchFiles(fullQuery.toString().trim());
-                model.addAttribute("files", files);
-            } catch (IOException e) {
-                e.printStackTrace();
-                model.addAttribute("files", List.of());
-            }
+        if (hasFilters) {
+            results = fileSearchService.searchFiles(query, keyword, institute, city, startDate, endDate);
         }
 
-        model.addAttribute("keywords", keywordConfig.getKeywordList());
-        model.addAttribute("institutes", instituteService.getAllInstitutes());
-        model.addAttribute("cities", cityService.getAllCitiesOfSaoPaulo());
+        model.addAttribute("files", results);
+        model.addAttribute("hasFilters", hasFilters);
 
-        model.addAttribute("selectedCity", city);
-        model.addAttribute("selectedInstitute", institute);
+        // Adiciona as listas para popular selects
+        model.addAttribute("keywords", keywordConfig.getKeywordList());
         model.addAttribute("selectedKeyword", keyword);
 
-        return "search";
+        model.addAttribute("cities", cityService.getAllCities());
+        model.addAttribute("selectedCity", city);
+
+        model.addAttribute("institutes", instituteService.getAllInstitutes());
+        model.addAttribute("selectedInstitute", institute);
+
+        model.addAttribute("startDate", startDate);
+        model.addAttribute("endDate", endDate);
+
+        return "search";  // nome do template Thymeleaf
     }
-
-
 
 
 
