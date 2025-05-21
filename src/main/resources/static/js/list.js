@@ -1,59 +1,24 @@
-// Toggle do menu do usuário
-   function toggleDropdown() {
-    const dropdown = document.getElementById("dropdownMenu");
-    dropdown.style.display = (dropdown.style.display === "block") ? "none" : "block";
-}
-
-// Fecha o menu se clicar fora dele
-window.addEventListener('click', function(e) {
-    const menu = document.getElementById("dropdownMenu");
-    const icon = document.querySelector(".user-icon");
-    if (!icon.contains(e.target)) {
-        menu.style.display = "none";
-    }
-});
 document.addEventListener('DOMContentLoaded', function () {
+    // Dropdown do usuário
+    const userIcon = document.querySelector('.user-icon');
+    const dropdownMenu = document.getElementById('dropdownMenu');
+
+    function toggleDropdown() {
+        dropdownMenu.style.display = dropdownMenu.style.display === 'block' ? 'none' : 'block';
+    }
+
+    userIcon?.addEventListener('click', function (e) {
+        e.stopPropagation();
+        toggleDropdown();
+    });
+
     window.addEventListener('click', function (e) {
-        const menu = document.getElementById("dropdownMenu");
-        const icon = document.querySelector(".user-icon");
-        if (!icon.contains(e.target)) {
-            menu.style.display = "none";
+        if (!userIcon.contains(e.target)) {
+            dropdownMenu.style.display = 'none';
         }
     });
 
-    document.querySelector(".user-icon").addEventListener('click', function () {
-        const dropdown = document.getElementById("dropdownMenu");
-        dropdown.style.display = (dropdown.style.display === "block") ? "none" : "block";
-    });
-});
-
-
-    // Botão flutuante abre o modal de Nova Pasta
-    document.getElementById("btnNovaPasta").addEventListener("click", function () {
-        document.getElementById("modalNovaPasta").style.display = "block";
-    });
-
-    // Fecha o modal ao clicar no X
-    document.getElementById("closeModal").addEventListener("click", function () {
-        document.getElementById("modalNovaPasta").style.display = "none";
-    });
-
-    // Fecha o modal ao clicar fora dele
-    window.addEventListener("click", function (event) {
-        const modal = document.getElementById("modalNovaPasta");
-        if (event.target === modal) {
-            modal.style.display = "none";
-        }
-    });
-
-    // Reforço: botão esc fecha o modal
-    window.addEventListener("keydown", function (event) {
-        if (event.key === "Escape") {
-            document.getElementById("modalNovaPasta").style.display = "none";
-        }
-    });
-
-    // Previne o comportamento padrão ao arrastar arquivos
+    // Upload por arrastar
     ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(event => {
         window.addEventListener(event, e => {
             e.preventDefault();
@@ -61,7 +26,6 @@ document.addEventListener('DOMContentLoaded', function () {
         });
     });
 
-    // Soltar arquivo na janela e realizar o upload
     window.addEventListener('drop', e => {
         const files = e.dataTransfer.files;
         if (files.length > 0) {
@@ -69,16 +33,15 @@ document.addEventListener('DOMContentLoaded', function () {
         }
     });
 
-    // Função de upload dos arquivos
     function uploadFiles(files) {
         const folderPath = document.getElementById("folderPath").value;
         const formData = new FormData();
         formData.append("folderPath", folderPath);
+
         for (let i = 0; i < files.length; i++) {
             formData.append("files", files[i]);
         }
 
-        // Mostrar barra de progresso
         const progressBar = document.getElementById('progressBar');
         const progressFill = document.getElementById('progressFill');
         progressBar.style.display = 'block';
@@ -108,7 +71,7 @@ document.addEventListener('DOMContentLoaded', function () {
         });
     }
 
-    // Visualizar arquivo
+    // Ações dos botões de arquivo
     document.querySelectorAll('.btn-view').forEach(link => {
         link.addEventListener('click', e => {
             e.preventDefault();
@@ -117,7 +80,6 @@ document.addEventListener('DOMContentLoaded', function () {
         });
     });
 
-    // Download de arquivo
     document.querySelectorAll('.btn-download').forEach(link => {
         link.addEventListener('click', e => {
             e.preventDefault();
@@ -136,203 +98,151 @@ document.addEventListener('DOMContentLoaded', function () {
                 a.click();
                 a.remove();
             })
-            .catch(err => alert("Erro ao baixar."));
+            .catch(() => alert("Erro ao baixar."));
         });
     });
 
-    // Abrir modal de renomear ao clicar no ícone
+    // Compartilhar arquivo
+    window.shareFileFromButton = function (button) {
+        const fileName = button.getAttribute("data-file");
+        const fileLink = `${window.location.origin}/view/${encodeURIComponent(fileName)}`;
+
+        navigator.clipboard.writeText(fileLink)
+            .then(() => alert('Link de compartilhamento copiado!'))
+            .catch(err => alert('Falha ao copiar: ' + err));
+    };
+
+    // Renomear arquivo
+    const renameModalElement = document.getElementById('modalRenameFile');
+    const renameModal = new bootstrap.Modal(renameModalElement);
+
     document.querySelectorAll('.btn-rename').forEach(link => {
         link.addEventListener('click', e => {
             e.preventDefault();
             const fileName = e.target.closest('a').getAttribute('data-file');
-            const fileNameWithoutExt = fileName.substring(0, fileName.lastIndexOf('.')); // Nome sem a extensão
-            const fileExt = fileName.substring(fileName.lastIndexOf('.'));
+            const fileNameWithoutExt = fileName.substring(0, fileName.lastIndexOf('.'));
             document.getElementById('oldFileName').value = fileName;
             document.getElementById('newFileName').value = fileNameWithoutExt;
-            document.getElementById('modalRenameFile').style.display = 'block';
+            renameModal.show();
         });
     });
 
-    // Fecha o modal de renomear ao clicar no X
-    document.getElementById("closeRenameModal").addEventListener("click", function () {
-        document.getElementById("modalRenameFile").style.display = "none";
+    document.getElementById('renameForm').addEventListener('submit', function (event) {
+        event.preventDefault();
+
+        const oldFileName = this.oldFileName.value;
+        const newFileName = this.newFileName.value;
+        const folderPath = document.getElementById("folderPath").value;
+
+        const endpoint = (!folderPath || folderPath.trim() === "")
+            ? `/storage/renameRootFile`
+            : `/storage/renameFile`;
+
+        fetch(`${endpoint}?oldFileName=${encodeURIComponent(oldFileName)}&newFileName=${encodeURIComponent(newFileName)}`, {
+            method: 'PATCH'
+        })
+        .then(async res => {
+            const isJson = res.headers.get("content-type")?.includes("application/json");
+            const data = isJson ? await res.json() : null;
+
+            if (!res.ok) {
+                const message = data?.message || res.statusText;
+                throw new Error(message);
+            }
+            return data;
+        })
+        .then(data => {
+            if (data.success) {
+                alert("Arquivo renomeado com sucesso!");
+                location.reload();
+            } else {
+                alert("Erro ao renomear arquivo: " + data.message);
+            }
+        })
+        .catch(err => alert("Erro: " + err.message));
     });
 
-  // Enviar o formulário de renomear
-document.getElementById('renameForm').addEventListener('submit', function (event) {
-    event.preventDefault();
+    // Mover pasta
+    let folderToMove = "";
+    let currentFolderPath = "";
 
-    const form = event.target;
-    const oldFileName = form.oldFileName.value;
-    const newFileName = form.newFileName.value;
-    const folderPath = document.getElementById("folderPath").value;
+    window.moveFolder = function (link) {
+        folderToMove = link.getAttribute("data-folder");
+        currentFolderPath = document.getElementById("folderPath").value;
 
-    const isRoot = !folderPath || folderPath.trim() === "";
+        document.getElementById("modalFolderName").innerText = folderToMove;
 
-    const params = new URLSearchParams({
-        oldFileName: oldFileName,
-        newFileName: newFileName
-    });
+        const select = document.getElementById("destinationSelect");
+        select.innerHTML = "";
 
-    const endpoint = isRoot
-        ? `/storage/renameRootFile?${params.toString()}`
-        : `/storage/renameFile?${params.toString()}`;
+        availableFolders
+            .filter(folder => folder !== folderToMove)
+            .forEach(folder => {
+                const option = document.createElement("option");
+                option.value = folder;
+                option.textContent = folder;
+                select.appendChild(option);
+            });
 
-    fetch(endpoint, {
-        method: 'PATCH'
-    })
-    .then(async response => {
-        const isJson = response.headers.get("content-type")?.includes("application/json");
-        const data = isJson ? await response.json() : null;
+        const modal = new bootstrap.Modal(document.getElementById("moveModal"));
+        modal.show();
+    };
 
-        if (!response.ok) {
-            const errorMessage = data?.message || response.statusText;
-            throw new Error(errorMessage);
-        }
+    window.confirmMove = function () {
+        const targetFolder = document.getElementById("destinationSelect").value;
+        const fullPath = `${currentFolderPath}/${folderToMove}`;
 
-        return data;
-    })
-    .then(data => {
-        if (data.success) {
-            alert("Arquivo renomeado com sucesso!");
-            location.reload();
-        } else {
-            alert("Erro ao renomear arquivo: " + data.message);
-        }
-    })
-    .catch(err => {
-        console.error("Erro:", err);
-        alert("Erro ao renomear arquivo: " + err.message);
-    });
-});
-    // Função chamada ao clicar no botão de compartilhar
-function shareFileFromButton(button) {
-    const fileName = button.getAttribute("data-file");
-
-    // Gera o link de compartilhamento baseado na visualização
-    const fileLink = `${window.location.origin}/view/${encodeURIComponent(fileName)}`;
-
-    // Copia o link para a área de transferência
-    navigator.clipboard.writeText(fileLink)
+        fetch(`/storage/moveFolder?fullPath=${encodeURIComponent(fullPath)}&newParentFolder=${encodeURIComponent(targetFolder)}`, {
+            method: "PATCH"
+        })
+        .then(res => {
+            if (!res.ok) throw new Error("Erro ao mover pasta");
+            return res.text();
+        })
         .then(() => {
-            alert('Link de compartilhamento copiado para a área de transferência!');
+            alert("Pasta movida com sucesso!");
+            location.reload();
         })
         .catch(err => {
-            alert('Falha ao copiar o link: ' + err);
+            console.error("Erro:", err);
+            alert("Erro inesperado.");
         });
-}
-    let moveMode = false;
+    };
 
-function toggleMoveFolderMode() {
-    moveMode = !moveMode;
-
-    // Mostra ou oculta os botões de mover por pasta
-    document.querySelectorAll('.btn-move-folder').forEach(btn => {
-        btn.style.display = moveMode ? 'inline-block' : 'none';
-    });
-
-    // Atualiza o texto ou cor do botão
-    document.getElementById("moveModeStatus").style.display = moveMode ? 'inline' : 'none';
-
-    document.getElementById("toggleMoveMode").textContent = moveMode
-        ? "Desativar Modo Mover"
-        : "Ativar Modo Mover";
-}
-
-// Ação ao clicar para mover a pasta
-let folderToMove = "";
-let currentFolderPath = "";
-
-function moveFolder(link) {
-    folderToMove = link.getAttribute("data-folder");
-    currentFolderPath = document.getElementById("folderPath").value;
-
-    document.getElementById("modalFolderName").innerText = folderToMove;
-
-    const select = document.getElementById("destinationSelect");
-    select.innerHTML = "";
-
-    availableFolders
-        .filter(folder => folder !== folderToMove)
-        .forEach(folder => {
-            const option = document.createElement("option");
-            option.value = folder;
-            option.textContent = folder;
-            select.appendChild(option);
+    // Dropdown ações de pasta
+    window.toggleActions = function (icon) {
+        const dropdown = icon.nextElementSibling;
+        document.querySelectorAll(".dropdown-content").forEach(menu => {
+            if (menu !== dropdown) menu.style.display = "none";
         });
+        dropdown.style.display = dropdown.style.display === "block" ? "none" : "block";
+    };
 
-    document.getElementById("moveModal").style.display = "flex";
-}
-
-function closeModal() {
-    document.getElementById("moveModal").style.display = "none";
-}
-
-function confirmMove() {
-    const targetFolder = document.getElementById("destinationSelect").value;
-    const fullPath = `${currentFolderPath}/${folderToMove}`;
-
-    fetch(`/storage/moveFolder?fullPath=${encodeURIComponent(fullPath)}&newParentFolder=${encodeURIComponent(targetFolder)}`, {
-        method: "PATCH"
-    })
-    .then(res => {
-        if (!res.ok) throw new Error("Erro ao mover pasta");
-        return res.text();
-    })
-    .then(data => {
-        alert("Pasta movida com sucesso!");
-        location.reload();
-    })
-    .catch(err => {
-        console.error("Erro:", err);
-        alert("Erro inesperado.");
-    });
-
-    closeModal();
-}
-
-// Ícone de menu (três pontos)
-function toggleActions(icon) {
-    const dropdown = icon.nextElementSibling;
-
-    // Fecha todos os outros menus abertos
-    document.querySelectorAll(".dropdown-content").forEach(menu => {
-        if (menu !== dropdown) {
-            menu.style.display = "none";
+    document.addEventListener("click", function (event) {
+        if (!event.target.closest(".folder")) {
+            document.querySelectorAll(".dropdown-content").forEach(menu => {
+                menu.style.display = "none";
+            });
         }
     });
 
-    // Alterna visibilidade do menu clicado
-    dropdown.style.display = dropdown.style.display === "block" ? "none" : "block";
-}
-
-// Fecha dropdown se clicar fora
-document.addEventListener("click", function(event) {
-    if (!event.target.closest(".folder")) {
-        document.querySelectorAll(".dropdown-content").forEach(menu => {
-            menu.style.display = "none";
-        });
-    }
+    // Download pasta
+    window.handleDownload = function (element) {
+        const folderName = element.getAttribute('data-folder-name');
+        fetch(`/storage/downloadFolder?folderPath=${encodeURIComponent(folderName)}`, {
+            method: 'GET',
+            credentials: 'include'
+        })
+        .then(res => res.blob())
+        .then(blob => {
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `${folderName}.zip`;
+            document.body.appendChild(a);
+            a.click();
+            a.remove();
+        })
+        .catch(() => alert("Erro ao baixar pasta."));
+    };
 });
-
-    function downloadFolder(folderName) {
-    fetch(`/storage/downloadFolder?folderPath=${encodeURIComponent(folderName)}`, {
-        method: 'GET',
-        credentials: 'include'
-    })
-    .then(res => res.blob())
-    .then(blob => {
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = folderName + ".zip";
-        document.body.appendChild(a);
-        a.click();
-        a.remove();
-    })
-    .catch(err => alert("Erro ao baixar pasta."));
-}
-    function handleDownload(element) {
-    const folderName = element.getAttribute('data-folder-name');
-    downloadFolder(folderName);
-}
