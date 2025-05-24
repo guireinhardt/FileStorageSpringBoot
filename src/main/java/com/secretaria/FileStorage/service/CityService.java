@@ -13,4 +13,9 @@ public class CityService {
                 // Adicione mais cidades conforme necessário
         );
     }
+    public boolean existsByName(String cityName) {
+        if (cityName == null) return false;
+        return getAllCities().stream()
+                .anyMatch(c -> c.equalsIgnoreCase(cityName));
+    }
 }

@@ -27,11 +27,14 @@
 <div class="container mt-4">
     <h2>Busca Avançada</h2>
     <form th:action="@{/advanced-search}" method="post">
+
+        <!-- Campo Texto de Busca -->
         <div class="mb-3">
             <label for="query" class="form-label">Buscar Texto</label>
             <input type="text" id="query" name="query" class="form-control" th:value="${query}" placeholder="Digite termo para busca..." />
         </div>
 
+        <!-- Campo Cidade (select) -->
         <div class="mb-3">
             <label for="city" class="form-label">Cidade</label>
             <select id="city" name="city" class="form-select">
@@ -40,14 +43,28 @@
             </select>
         </div>
 
-        <!-- Aqui você pode adicionar novos campos de busca, por exemplo Instituto -->
-        <!--
+        <!-- Campo Instituto (select) -->
         <div class="mb-3">
             <label for="institute" class="form-label">Instituto</label>
-            <input type="text" id="institute" name="institute" class="form-control" th:value="${institute}" placeholder="Digite o instituto..." />
+            <select id="institute" name="institute" class="form-select">
+                <option value="">-- Selecione um instituto --</option>
+                <option th:each="inst : ${institutes}"
+                        th:value="${inst}"
+                        th:text="${inst}"
+                        th:selected="${inst == selectedInstitute}">
+                </option>
+            </select>
         </div>
-        -->
 
+
+
+        <!-- Campo Data -->
+        <div class="mb-3">
+            <label for="date" class="form-label">Data</label>
+            <input type="date" id="date" name="date" class="form-control" th:value="${selectedDate}" />
+        </div>
+
+        <!-- Pastas com checkbox -->
         <div class="mb-3">
             <label class="form-label">Pastas</label>
             <div>
@@ -56,11 +73,9 @@
                         <span class="toggle" onclick="toggleSubfolders(this)">&#x25B6;</span>
                         <label>
                             <input type="checkbox" name="folders" th:value="${folder.path}" th:checked="${#lists.contains(selectedFolders ?: {}, folder.path)}" />
-
-
                             <span th:text="${folder.name}"></span>
                         </label>
-                        <ul class="folder-children" style="display:none;" th:if="${folder.subFolders}" th:insert="~{this :: renderSubFolders(${folder.subFolders})}">
+                        <ul class="folder-children" style="display:none;" th:if="${folder.subFolders}" th:insert="~{this :: renderSubFolders(${folder.subFolders}, ${selectedFolders})}">
                         </ul>
                     </li>
                 </ul>
@@ -72,6 +87,7 @@
 
     <hr/>
 
+    <!-- Resultados da busca -->
     <form th:action="@{/explorer/download-zip}" method="post" id="downloadZipForm">
         <div th:if="${files != null}">
             <h3>Resultados</h3>
@@ -90,25 +106,23 @@
                         <a th:href="@{'/explorer/download'(path=${file.fullPath})}" class="btn btn-sm btn-success">
                             Download
                         </a>
-
                     </div>
                 </li>
             </ul>
             <button type="submit" class="btn btn-primary mt-3">Baixar Selecionados (ZIP)</button>
         </div>
     </form>
-
 </div>
 
 <!-- Fragmento Thymeleaf para renderizar subpastas recursivamente -->
-<th:block th:fragment="renderSubFolders(subfolders)">
+<th:block th:fragment="renderSubFolders(subfolders, selectedFolders)">
     <li th:each="sub : ${subfolders}">
         <span class="toggle" onclick="toggleSubfolders(this)">&#x25B6;</span>
         <label>
-            <input type="checkbox" name="folders" th:value="${sub.path}" th:checked="${#lists.contains(folders, sub.path)}" />
+            <input type="checkbox" name="folders" th:value="${sub.path}" th:checked="${#lists.contains(selectedFolders ?: {}, sub.path)}" />
             <span th:text="${sub.name}"></span>
         </label>
-        <ul class="folder-children" style="display:none;" th:if="${sub.subFolders}" th:insert="~{this :: renderSubFolders(${sub.subFolders})}"></ul>
+        <ul class="folder-children" style="display:none;" th:if="${sub.subFolders}" th:insert="~{this :: renderSubFolders(${sub.subFolders}, ${selectedFolders})}"></ul>
     </li>
 </th:block>
 
