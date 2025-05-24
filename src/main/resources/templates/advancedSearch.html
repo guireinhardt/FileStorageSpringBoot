@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8" />
+    <title>Busca Avançada</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet" />
+    <style>
+        /* Indentação para árvore de pastas */
+        .folder-children {
+            margin-left: 20px;
+            padding-left: 0;
+        }
+        /* Estilo para o ícone de toggle */
+        .toggle {
+            cursor: pointer;
+            user-select: none;
+            display: inline-block;
+            width: 18px;
+        }
+        /* Remove marcador padrão do ul */
+        ul, li {
+            list-style: none;
+        }
+    </style>
+</head>
+<body>
+<div class="container mt-4">
+    <h2>Busca Avançada</h2>
+    <form th:action="@{/advanced-search}" method="post">
+        <div class="mb-3">
+            <label for="query" class="form-label">Buscar Texto</label>
+            <input type="text" id="query" name="query" class="form-control" th:value="${query}" placeholder="Digite termo para busca..." />
+        </div>
+
+        <div class="mb-3">
+            <label for="city" class="form-label">Cidade</label>
+            <select id="city" name="city" class="form-select">
+                <option value="">-- Selecione uma cidade --</option>
+                <option th:each="c : ${cities}" th:value="${c}" th:text="${c}" th:selected="${c == selectedCity}"></option>
+            </select>
+        </div>
+
+        <!-- Aqui você pode adicionar novos campos de busca, por exemplo Instituto -->
+        <!--
+        <div class="mb-3">
+            <label for="institute" class="form-label">Instituto</label>
+            <input type="text" id="institute" name="institute" class="form-control" th:value="${institute}" placeholder="Digite o instituto..." />
+        </div>
+        -->
+
+        <div class="mb-3">
+            <label class="form-label">Pastas</label>
+            <div>
+                <ul style="padding-left: 0;">
+                    <li th:each="folder : ${folders}">
+                        <span class="toggle" onclick="toggleSubfolders(this)">&#x25B6;</span>
+                        <label>
+                            <input type="checkbox" name="folders" th:value="${folder.path}" th:checked="${#lists.contains(selectedFolders ?: {}, folder.path)}" />
+
+
+                            <span th:text="${folder.name}"></span>
+                        </label>
+                        <ul class="folder-children" style="display:none;" th:if="${folder.subFolders}" th:insert="~{this :: renderSubFolders(${folder.subFolders})}">
+                        </ul>
+                    </li>
+                </ul>
+            </div>
+        </div>
+
+        <button type="submit" class="btn btn-primary">Buscar</button>
+    </form>
+
+    <hr/>
+
+    <form th:action="@{/explorer/download-zip}" method="post" id="downloadZipForm">
+        <div th:if="${files != null}">
+            <h3>Resultados</h3>
+            <div th:if="${files.size() == 0}">
+                <p>Nenhum arquivo encontrado.</p>
+            </div>
+            <ul th:if="${files.size() > 0}" class="list-group">
+                <li class="list-group-item d-flex justify-content-between align-items-center" th:each="file : ${files}">
+                    <div>
+                        <input type="checkbox" name="files" th:value="${file.fullPath}" />
+                        <strong th:text="${file.name}"></strong><br/>
+                        <small th:text="${file.fullPath}"></small>
+                    </div>
+                    <div>
+                        <a th:href="@{/view(path=${file.fullPath})}" target="_blank" class="btn btn-sm btn-outline-primary">Visualizar</a>
+                        <a th:href="@{'/explorer/download'(path=${file.fullPath})}" class="btn btn-sm btn-success">
+                            Download
+                        </a>
+
+                    </div>
+                </li>
+            </ul>
+            <button type="submit" class="btn btn-primary mt-3">Baixar Selecionados (ZIP)</button>
+        </div>
+    </form>
+
+</div>
+
+<!-- Fragmento Thymeleaf para renderizar subpastas recursivamente -->
+<th:block th:fragment="renderSubFolders(subfolders)">
+    <li th:each="sub : ${subfolders}">
+        <span class="toggle" onclick="toggleSubfolders(this)">&#x25B6;</span>
+        <label>
+            <input type="checkbox" name="folders" th:value="${sub.path}" th:checked="${#lists.contains(folders, sub.path)}" />
+            <span th:text="${sub.name}"></span>
+        </label>
+        <ul class="folder-children" style="display:none;" th:if="${sub.subFolders}" th:insert="~{this :: renderSubFolders(${sub.subFolders})}"></ul>
+    </li>
+</th:block>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+<script>
+    function toggleSubfolders(element) {
+        const nextUl = element.parentElement.querySelector('.folder-children');
+        if (!nextUl) return;
+
+        if (nextUl.style.display === 'none' || nextUl.style.display === '') {
+            nextUl.style.display = 'block';
+            element.innerHTML = '&#x25BC;'; // triângulo ▼
+        } else {
+            nextUl.style.display = 'none';
+            element.innerHTML = '&#x25B6;'; // triângulo ►
+        }
+    }
+</script>
+</body>
+</html>

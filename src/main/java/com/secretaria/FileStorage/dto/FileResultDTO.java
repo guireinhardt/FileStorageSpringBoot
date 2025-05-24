@@ -8,6 +8,9 @@ public class FileResultDTO {
     private String fullPath;
     private LocalDate creationDate; // Novo campo
 
+
+    public FileResultDTO(){}
+
     public FileResultDTO(String name, String fullPath) {
         this.name = name;
         this.fullPath = fullPath;

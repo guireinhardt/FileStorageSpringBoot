@@ -221,6 +221,50 @@ public class FileSearchService {
 
         return null;
     }
+    public List<FileResultDTO> searchFilesByFolders(String query, String city, List<String> folders) throws IOException {
+        if (folders == null || folders.isEmpty()) {
+            return Collections.emptyList();
+        }
+
+        List<FileResultDTO> result = new ArrayList<>();
+
+        for (String folderName : folders) {
+            Path folder = Paths.get(folderName);  // monta caminho completo
+
+            if (!Files.exists(folder) || !Files.isDirectory(folder)) {
+                System.out.println("Pasta inválida ou não encontrada: " + folder);
+                continue;
+            }
+
+            try (Stream<Path> paths = Files.walk(folder)) {
+                List<FileResultDTO> filesInFolder = paths
+                        .filter(Files::isRegularFile)
+                        .filter(path -> !path.toString().toLowerCase().contains("lixeira"))
+                        .filter(path -> {
+                            String fileName = path.getFileName().toString().toLowerCase();
+
+                            if (query != null && !query.isBlank() && !fileName.contains(query.toLowerCase())) {
+                                return false;
+                            }
+                            if (city != null && !city.isBlank() && !fileName.contains(city.toLowerCase())) {
+                                return false;
+                            }
+
+                            return true;
+                        })
+                        .map(path -> new FileResultDTO(path.getFileName().toString(), path.toAbsolutePath().toString()))
+                        .collect(Collectors.toList());
+
+                result.addAll(filesInFolder);
+            }
+        }
+
+        return result;
+    }
+
+
+
+
 
 
 

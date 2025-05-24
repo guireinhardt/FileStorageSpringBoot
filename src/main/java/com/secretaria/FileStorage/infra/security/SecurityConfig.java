@@ -46,6 +46,10 @@ public class SecurityConfig {
                             .requestMatchers(HttpMethod.GET, "/view/**").authenticated()
                             .requestMatchers(HttpMethod.GET, "/storage/**").authenticated()
                             .requestMatchers(HttpMethod.GET, "/download/**").authenticated()
+                            .requestMatchers(HttpMethod.GET, "/explorer/view").authenticated()
+                            .requestMatchers(HttpMethod.GET, "/explorer/download").authenticated()
+                            .requestMatchers(HttpMethod.POST, "/explorer/download-zip").authenticated()
+
                             .requestMatchers("/success", "/error").permitAll()
                             .requestMatchers(HttpMethod.POST, "/storage/delete").hasRole("ADMIN") // Apenas admin pode deletar
                             .anyRequest().authenticated()
