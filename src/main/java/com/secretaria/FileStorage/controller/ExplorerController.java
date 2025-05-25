@@ -6,6 +6,7 @@ import com.secretaria.FileStorage.service.CityService;
 import com.secretaria.FileStorage.service.FileListService;
 import com.secretaria.FileStorage.service.FolderService;
 import com.secretaria.FileStorage.vo.FileVO;
+import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.io.InputStreamResource;
@@ -18,9 +19,7 @@ import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
 
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.IOException;
+import java.io.*;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -123,7 +122,7 @@ public class ExplorerController {
                 .body(resource);
     }
 
-    @PostMapping("/download-zip")
+   /* @PostMapping("/download-zip")
     public ResponseEntity<Resource> downloadMultiple(@RequestParam List<String> files) throws IOException {
         for (String filePath : files) {
             if (!isPathInsideBaseDir(fileStorageLocation, filePath)) {
@@ -149,7 +148,94 @@ public class ExplorerController {
                 .contentType(MediaType.APPLICATION_OCTET_STREAM)
                 .contentLength(zipPath.toFile().length())
                 .body(resource);
+    }  */
+    @PostMapping("/download-zip")
+    public void downloadZip(@RequestParam("files") List<String> selectedPaths, HttpServletResponse response) throws IOException {
+        // Criar ZIP
+        ByteArrayOutputStream baos = new ByteArrayOutputStream();
+        ZipOutputStream zos = new ZipOutputStream(baos);
+
+        for (String pathStr : selectedPaths) {
+            Path path = Paths.get(pathStr);
+            if (Files.exists(path)) {
+                if (Files.isDirectory(path)) {
+                    zipFolder(path, path.getFileName().toString(), zos); // Pasta
+                } else {
+                    zipFile(path, path.getFileName().toString(), zos);   // Arquivo
+                }
+            }
+        }
+
+        zos.close();
+
+        // Enviar o ZIP para o navegador
+        response.setContentType("application/zip");
+        response.setHeader("Content-Disposition", "attachment; filename=arquivos_selecionados.zip");
+        response.getOutputStream().write(baos.toByteArray());
+        response.getOutputStream().flush();
+        response.getOutputStream().close();
     }
+
+    @GetMapping("/download-folder")
+    public void downloadFolder(@RequestParam("path") String folderPath, HttpServletResponse response) throws IOException {
+        Path folder = Paths.get(fileStorageLocation, folderPath); // ajuste "uploads" conforme seu caminho base real
+
+        if (!Files.exists(folder) || !Files.isDirectory(folder)) {
+            response.sendError(HttpServletResponse.SC_NOT_FOUND, "Pasta não encontrada");
+            return;
+        }
+
+        Path zipPath = Files.createTempFile("pasta-", ".zip");
+
+        try (ZipOutputStream zos = new ZipOutputStream(Files.newOutputStream(zipPath))) {
+            Files.walk(folder).filter(Files::isRegularFile).forEach(file -> {
+                try {
+                    Path relativePath = folder.relativize(file);
+                    zos.putNextEntry(new ZipEntry(relativePath.toString()));
+                    Files.copy(file, zos);
+                    zos.closeEntry();
+                } catch (IOException e) {
+                    e.printStackTrace(); // log de erro
+                }
+            });
+        }
+
+        response.setContentType("application/zip");
+        response.setHeader("Content-Disposition", "attachment; filename=" + folder.getFileName() + ".zip");
+        response.setContentLengthLong(Files.size(zipPath));
+
+        try (InputStream is = Files.newInputStream(zipPath)) {
+            is.transferTo(response.getOutputStream());
+        }
+
+        Files.deleteIfExists(zipPath);
+    }
+
+
+    //métodos auxiliares
+    private void zipFile(Path file, String entryName, ZipOutputStream zos) throws IOException {
+        zos.putNextEntry(new ZipEntry(entryName));
+        Files.copy(file, zos);
+        zos.closeEntry();
+    }
+
+    private void zipFolder(Path folder, String baseName, ZipOutputStream zos) throws IOException {
+        Files.walk(folder).forEach(path -> {
+            try {
+                if (Files.isDirectory(path)) return;
+
+                String entryName = baseName + "/" + folder.relativize(path).toString();
+                zos.putNextEntry(new ZipEntry(entryName));
+                Files.copy(path, zos);
+                zos.closeEntry();
+            } catch (IOException e) {
+                throw new UncheckedIOException(e);
+            }
+        });
+    }
+
+
+
 }
 
 

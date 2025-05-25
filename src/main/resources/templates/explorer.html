@@ -28,17 +28,24 @@
                     <input type="checkbox" name="files" th:value="${file.fullPath}" class="form-check-input me-2 file-checkbox"/>
                     <span th:text="${file.name}"></span>
                 </div>
+
                 <div class="file-actions">
                     <a class="btn btn-sm btn-outline-primary"
-                       th:href="@{/explorer/view(path=${file.fullPath})}" target="_blank">
-                        Visualizar
+                       th:if="${!file.folder}"
+                    th:href="@{/explorer/view(path=${file.fullPath})}" target="_blank">
+                    Visualizar
                     </a>
+
                     <a class="btn btn-sm btn-outline-success"
-                       th:href="@{/explorer/download(path=${file.fullPath})}">
-                        Download
+                       th:if="${!file.folder}"
+                    th:href="@{/explorer/download(path=${file.fullPath})}">
+                    Download
                     </a>
+
+
                 </div>
             </li>
+
         </ul>
 
         <div class="mt-3">
