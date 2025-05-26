@@ -24,6 +24,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.stream.Stream;
 import java.util.zip.ZipEntry;
@@ -176,40 +177,26 @@ public class ExplorerController {
         response.getOutputStream().close();
     }
 
-    @GetMapping("/download-folder")
-    public void downloadFolder(@RequestParam("path") String folderPath, HttpServletResponse response) throws IOException {
-        Path folder = Paths.get(fileStorageLocation, folderPath); // ajuste "uploads" conforme seu caminho base real
-
-        if (!Files.exists(folder) || !Files.isDirectory(folder)) {
-            response.sendError(HttpServletResponse.SC_NOT_FOUND, "Pasta não encontrada");
-            return;
+    @PostMapping("/explorer/download-folders")
+    public ResponseEntity<Resource> downloadFolders(@RequestParam("selectedFolders") List<String> selectedFolders) throws IOException {
+        if (selectedFolders == null || selectedFolders.isEmpty()) {
+            return ResponseEntity.badRequest().build();
         }
 
-        Path zipPath = Files.createTempFile("pasta-", ".zip");
+        // Crie um arquivo ZIP com todas as pastas
+        File zipFile = createZipFromFolders(selectedFolders);
 
-        try (ZipOutputStream zos = new ZipOutputStream(Files.newOutputStream(zipPath))) {
-            Files.walk(folder).filter(Files::isRegularFile).forEach(file -> {
-                try {
-                    Path relativePath = folder.relativize(file);
-                    zos.putNextEntry(new ZipEntry(relativePath.toString()));
-                    Files.copy(file, zos);
-                    zos.closeEntry();
-                } catch (IOException e) {
-                    e.printStackTrace(); // log de erro
-                }
-            });
-        }
+        InputStreamResource resource = new InputStreamResource(new FileInputStream(zipFile));
 
-        response.setContentType("application/zip");
-        response.setHeader("Content-Disposition", "attachment; filename=" + folder.getFileName() + ".zip");
-        response.setContentLengthLong(Files.size(zipPath));
-
-        try (InputStream is = Files.newInputStream(zipPath)) {
-            is.transferTo(response.getOutputStream());
-        }
-
-        Files.deleteIfExists(zipPath);
+        return ResponseEntity.ok()
+                .header(HttpHeaders.CONTENT_DISPOSITION, "attachment;filename=pastas.zip")
+                .contentType(MediaType.APPLICATION_OCTET_STREAM)
+                .contentLength(zipFile.length())
+                .body(resource);
     }
+
+
+
 
 
     //métodos auxiliares
@@ -233,6 +220,26 @@ public class ExplorerController {
             }
         });
     }
+    public File createZipFromFolders(List<String> folderPaths) throws IOException {
+        File zipFile = File.createTempFile("pastas_", ".zip");
+        try (ZipOutputStream zos = new ZipOutputStream(new FileOutputStream(zipFile))) {
+            for (String folderPath : folderPaths) {
+                Path folder = Paths.get(folderPath);
+                Files.walk(folder).filter(Files::isRegularFile).forEach(file -> {
+                    try {
+                        ZipEntry zipEntry = new ZipEntry(folder.relativize(file).toString());
+                        zos.putNextEntry(zipEntry);
+                        Files.copy(file, zos);
+                        zos.closeEntry();
+                    } catch (IOException e) {
+                        throw new UncheckedIOException(e);
+                    }
+                });
+            }
+        }
+        return zipFile;
+    }
+
 
 
 
