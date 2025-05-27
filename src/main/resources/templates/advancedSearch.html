@@ -161,10 +161,13 @@
         <div class="mt-4">
             <label class="form-label">Pastas</label>
             <div class="border rounded p-3 bg-white" style="max-height: 300px; overflow-y: auto;">
-                <div class="form-check-all">
-                    <input type="checkbox" id="checkAllFolders" onclick="toggleAllFolders(this)" class="form-check-input me-2" />
-                    <label for="checkAllFolders" class="form-check-label">Selecionar Todas</label>
+                <div class="form-check-all d-flex justify-content-between align-items-center">
+                    <div>
+                        <input type="checkbox" id="checkAllFolders" onclick="toggleAllFolders(this)" class="form-check-input me-2" />
+                        <label for="checkAllFolders" class="form-check-label">Selecionar Todas</label>
+                    </div>
                 </div>
+
                 <ul class="mb-0" style="padding-left: 0;">
                     <li th:each="folder : ${folders}">
                         <span class="toggle me-1" onclick="toggleSubfolders(this)">&#x25B6;</span>
@@ -175,14 +178,9 @@
                         <ul class="folder-children" style="display:none;" th:if="${folder.subFolders}" th:insert="~{this :: renderSubFolders(${folder.subFolders}, ${selectedFolders})}"></ul>
                     </li>
                 </ul>
-            </div>
-<!--            <form id="downloadFoldersForm" th:action="@{/explorer/download-folders}" method="post" class="mt-2">-->
-<!--                <input type="hidden" name="selectedFolders" id="selectedFoldersInput" />-->
-<!--                <button type="button" class="btn btn-success" onclick="submitSelectedFolders()">-->
-<!--                    Baixar Pastas Selecionadas (.ZIP)-->
-<!--                </button>-->
-<!--            </form>-->
 
+
+            </div>
         </div>
 
         <div class="mt-4">
@@ -221,6 +219,12 @@
             </div>
         </div>
     </form>
+    <form th:action="@{/explorer/download-folders}" method="post" onsubmit="return prepareSelectedFoldersDownload();" style="margin-top: 15px;">
+        <input type="hidden" name="selectedFolders" id="selectedFoldersInputTop" />
+        <button type="submit" class="btn btn-success">
+            <i class="fas fa-download"></i> Baixar Pastas Selecionadas (ZIP)
+        </button>
+    </form>
 </div>
 
 <th:block th:fragment="renderSubFolders(subfolders, selectedFolders)">
@@ -258,11 +262,33 @@
         checkboxes.forEach(cb => cb.checked = master.checked);
     }
     function prepareSelectedFolders() {
-    const selected = Array.from(document.querySelectorAll('.folder-checkbox:checked')).map(cb => cb.value);
-    document.getElementById('selectedFoldersInput').value = selected.join(',');
-    return true;
-}
+    const selected = Array.from(document.querySelectorAll('.folder-checkbox:checked'))
+                          .map(cb => cb.value.trim()) // trim para evitar espaços extras
+                          .filter(val => val !== ''); // ignora vazios
 
+    if (selected.length === 0) {
+        alert('Selecione pelo menos uma pasta.');
+        return false; // impede envio se nada foi selecionado
+    }
+
+    const selectedString = selected.join(',');
+    const input = document.getElementById('selectedFoldersInputTop');
+    input.value = selectedString;
+
+    return true; // permite envio
+}
+    function prepareSelectedFoldersDownload() {
+    const selectedFolders = Array.from(document.querySelectorAll('.folder-checkbox:checked'))
+        .map(cb => cb.value.trim())
+        .filter(v => v !== '');
+
+    if (selectedFolders.length === 0) {
+        alert('Selecione pelo menos uma pasta.');
+        return false;
+    }
+
+    document.getElementById('selectedFoldersInputTop').value = selectedFolders.join(',');
+    return true; }
 
 </script>
 </body>

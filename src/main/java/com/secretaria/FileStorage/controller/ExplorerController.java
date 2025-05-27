@@ -11,6 +11,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.io.InputStreamResource;
 import org.springframework.core.io.Resource;
+import org.springframework.core.io.UrlResource;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
@@ -177,23 +178,46 @@ public class ExplorerController {
         response.getOutputStream().close();
     }
 
-    @PostMapping("/explorer/download-folders")
-    public ResponseEntity<Resource> downloadFolders(@RequestParam("selectedFolders") List<String> selectedFolders) throws IOException {
-        if (selectedFolders == null || selectedFolders.isEmpty()) {
-            return ResponseEntity.badRequest().build();
+    @PostMapping("/download-folders")
+    public ResponseEntity<Resource> downloadFoldersAsZip(@RequestParam("selectedFolders") String folderPathsStr) throws IOException {
+        List<String> folderPaths = Arrays.asList(folderPathsStr.split(","));
+
+        List<Path> allFiles = new ArrayList<>();
+        for (String folderPathStr : folderPaths) {
+            Path folderPath = Paths.get(folderPathStr).toAbsolutePath().normalize();
+            if (Files.exists(folderPath) && Files.isDirectory(folderPath)) {
+                try (Stream<Path> stream = Files.walk(folderPath)) {
+                    stream.filter(Files::isRegularFile).forEach(allFiles::add);
+                }
+            }
         }
 
-        // Crie um arquivo ZIP com todas as pastas
-        File zipFile = createZipFromFolders(selectedFolders);
+        if (allFiles.isEmpty()) {
+            return ResponseEntity.noContent().build();
+        }
 
-        InputStreamResource resource = new InputStreamResource(new FileInputStream(zipFile));
+        // Determina o diretório base com base no primeiro caminho informado
+        Path basePath = Paths.get(folderPaths.get(0)).toAbsolutePath().normalize();
 
+        Path zipPath = Files.createTempFile("folders-", ".zip");
+        try (ZipOutputStream zos = new ZipOutputStream(Files.newOutputStream(zipPath))) {
+            for (Path file : allFiles) {
+                Path absoluteFile = file.toAbsolutePath().normalize();
+                if (!absoluteFile.startsWith(basePath)) continue; // segurança extra
+                Path relativePath = basePath.relativize(absoluteFile);
+                zos.putNextEntry(new ZipEntry(relativePath.toString()));
+                Files.copy(absoluteFile, zos);
+                zos.closeEntry();
+            }
+        }
+
+        Resource resource = new UrlResource(zipPath.toUri());
         return ResponseEntity.ok()
-                .header(HttpHeaders.CONTENT_DISPOSITION, "attachment;filename=pastas.zip")
                 .contentType(MediaType.APPLICATION_OCTET_STREAM)
-                .contentLength(zipFile.length())
+                .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"pastas_selecionadas.zip\"")
                 .body(resource);
     }
+
 
 
 
