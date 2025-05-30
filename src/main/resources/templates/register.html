@@ -13,12 +13,29 @@
             <img src="/images/agri.jpg" alt="Logo" class="logo">
             <h2>Registrar Usuário</h2>
             <form id="register-form" th:action="@{/auth/register}" method="post">
+
+                <!-- Campo Nome -->
+                <div class="input-group">
+                    <i class="fas fa-id-card icon-left"></i>
+                    <input type="text" id="nome" name="nome" placeholder="Nome Completo"
+                           th:value="${usuario?.nome}" required>
+                </div>
+
+                <!-- Campo CPF -->
+                <div class="input-group">
+                    <i class="fas fa-address-card icon-left"></i>
+                    <input type="text" id="cpf" name="cpf" placeholder="CPF"
+                           th:value="${usuario?.cpf}" pattern="\d{3}\.\d{3}\.\d{3}-\d{2}" title="Formato: 000.000.000-00" required>
+                </div>
+
+                <!-- Campo Login -->
                 <div class="input-group">
                     <i class="fas fa-user icon-left"></i>
                     <input type="text" id="login" name="login" placeholder="Nome de Usuário"
                            th:value="${usuario?.login}" required>
                 </div>
 
+                <!-- Campo Senha -->
                 <div class="input-group">
                     <i class="fas fa-lock icon-left"></i>
                     <input type="password" id="password" name="password" placeholder="Senha" required>
@@ -27,6 +44,7 @@
                     </button>
                 </div>
 
+                <!-- Campo Role -->
                 <div class="input-group">
                     <i class="fas fa-users icon-left"></i>
                     <select id="role" name="role" required>
@@ -44,46 +62,52 @@
 
 <script>
     // Envio do formulário
-   document.getElementById('register-form').addEventListener('submit', function(event) {
-       event.preventDefault();
+    document.getElementById('register-form').addEventListener('submit', function(event) {
+    event.preventDefault();
 
-       const data = {
-           login: document.getElementById('login').value,
-           password: document.getElementById('password').value,
-           role: document.getElementById('role').value
-       };
+    // Remove máscara do CPF
+    const cpfLimpo = document.getElementById('cpf').value.replace(/\D/g, '');
 
-       fetch(this.getAttribute('action'), {
-           method: 'POST',
-           headers: {
-               'Content-Type': 'application/json'
-           },
-           body: JSON.stringify(data)
-       })
-       .then(response => {
-           if (response.ok) {
-               window.location.href = '/auth/login';
-           } else {
-               alert('Erro ao registrar usuário');
-           }
-       })
-       .catch(error => {
-           console.error('Erro:', error);
-           alert('Erro ao enviar dados');
-       });
-   });
+    const data = {
+        nome: document.getElementById('nome').value,
+        cpf: cpfLimpo,
+        login: document.getElementById('login').value,
+        password: document.getElementById('password').value,
+        role: document.getElementById('role').value
+    };
 
-   // Botão de visualização da senha
-   document.getElementById('togglePassword').addEventListener('click', function () {
-       const passwordInput = document.getElementById('password');
-       const eyeIcon = document.getElementById('eyeIcon');
+    fetch(this.getAttribute('action'), {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(data)
+    })
+    .then(response => {
+        if (response.ok) {
+            window.location.href = '/auth/login';
+        } else {
+            alert('Erro ao registrar usuário');
+        }
+    })
+    .catch(error => {
+        console.error('Erro:', error);
+        alert('Erro ao enviar dados');
+    });
+});
 
-       const isPassword = passwordInput.type === 'password';
-       passwordInput.type = isPassword ? 'text' : 'password';
 
-       eyeIcon.classList.toggle('fa-eye');
-       eyeIcon.classList.toggle('fa-eye-slash');
-   });
+    // Botão de visualização da senha
+    document.getElementById('togglePassword').addEventListener('click', function () {
+        const passwordInput = document.getElementById('password');
+        const eyeIcon = document.getElementById('eyeIcon');
+
+        const isPassword = passwordInput.type === 'password';
+        passwordInput.type = isPassword ? 'text' : 'password';
+
+        eyeIcon.classList.toggle('fa-eye');
+        eyeIcon.classList.toggle('fa-eye-slash');
+    });
 </script>
 </body>
 </html>

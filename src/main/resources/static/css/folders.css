@@ -343,6 +343,78 @@ td i:hover {
     color: #0d47a1;
 }
 
+.modal-move {
+    display: none;
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    background: #fff;
+    padding: 20px;
+    border-radius: 10px;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+    z-index: 1000;
+    width: 300px;
+    max-height: 90vh;
+    overflow-y: auto;
+    font-family: Arial, sans-serif;
+}
+
+.move-modal-title {
+    margin-top: 0;
+    margin-bottom: 15px;
+    font-size: 18px;
+    color: #1B5E20;
+    text-align: center;
+}
+
+.move-modal-label {
+    font-size: 14px;
+    font-weight: bold;
+    margin-bottom: 5px;
+    display: block;
+}
+
+.move-modal-select {
+    width: 100%;
+    padding: 6px;
+    font-size: 14px;
+    border-radius: 4px;
+    border: 1px solid #ccc;
+    margin-bottom: 15px;
+}
+
+.move-modal-actions {
+    text-align: right;
+}
+
+.move-btn-confirm,
+.move-btn-cancel {
+    padding: 8px 12px;
+    font-size: 14px;
+    border-radius: 4px;
+    cursor: pointer;
+    border: none;
+}
+
+.move-btn-confirm {
+    background-color: #1B5E20;
+    color: white;
+    margin-right: 8px;
+}
+
+.move-btn-cancel {
+    background-color: #ccc;
+    color: #333;
+}
+
+
+
+
+
+
+
+
 
 
 

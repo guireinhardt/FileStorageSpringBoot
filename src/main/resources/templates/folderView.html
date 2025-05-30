@@ -153,13 +153,21 @@
 
     </div>
 </div>
-<div id="moveModal" style="display:none; position:fixed; top:20%; left:30%; background:white; padding:20px; border:1px solid #ccc; z-index:1000">
-    <h3>Mover Arquivo</h3>
-    <select id="folderSelect"></select>
-    <br><br>
-    <button id="confirmMove">Mover</button>
-    <button onclick="document.getElementById('moveModal').style.display='none'">Cancelar</button>
+<div id="moveModal" class="modal-move">
+    <h3 class="move-modal-title">Mover Arquivo</h3>
+
+    <label for="folderSelect" class="move-modal-label">Selecione a pasta de destino:</label>
+    <select id="folderSelect" class="move-modal-select"></select>
+
+    <div class="move-modal-actions">
+        <button id="confirmMove" class="move-btn-confirm">Mover</button>
+        <button onclick="document.getElementById('moveModal').style.display='none'" class="move-btn-cancel">Cancelar</button>
+    </div>
 </div>
+
+
+
+
 
 
 <!-- Toast -->
@@ -336,10 +344,12 @@ function openMoveModal(button) {
         folderSelect.innerHTML = "";
 
         folders.forEach(folder => {
-            const option = document.createElement('option');
-            option.value = folder;
-            option.textContent = folder;
-            folderSelect.appendChild(option);
+        if (folder.toLowerCase() !== 'lixeira') {  // FILTRO para ignorar "lixeira"
+        const option = document.createElement('option');
+        option.value = folder;
+        option.textContent = folder;
+        folderSelect.appendChild(option);
+    }
         });
 
         document.getElementById('moveModal').style.display = 'block';
@@ -410,11 +420,11 @@ let isFolder = false;
         folderSelect.appendChild(rootOption);
 
         folders.forEach(folder => {
-            if (folder !== itemToMove) {  // Evita mover pasta dentro dela mesma
-                const option = document.createElement('option');
-                option.value = folder;
-                option.textContent = folder;
-                folderSelect.appendChild(option);
+        if (folder !== itemToMove && folder.toLowerCase() !== 'lixeira') {  // Ignora a própria pasta e a "lixeira"
+        const option = document.createElement('option');
+        option.value = folder;
+        option.textContent = folder;
+        folderSelect.appendChild(option);
             }
         });
 

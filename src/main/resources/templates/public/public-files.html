@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+  <meta charset="UTF-8">
+  <title>Arquivos Finalizados</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+</head>
+<body class="bg-light">
+<div class="container mt-5">
+  <h2 class="mb-4">📁 Arquivos Finalizados</h2>
+
+  <div th:if="${param.path != null}">
+    <p>
+      📌 <strong>Você está em:</strong>
+      <span th:with="parts=${#strings.arraySplit(param.path[0], '/')}"
+            th:each="part, iterStat : ${parts}">
+      <a th:href="@{/public/index(path=${#strings.arrayJoin(T(java.util.Arrays).copyOfRange(parts, 0, iterStat.index + 1), '/')})}"
+         th:text="${part}">parte</a>
+      <span th:if="${!iterStat.last}"> / </span>
+    </span>
+    </p>
+  </div>
+
+
+  <div class="mb-3" th:if="${param.path != null}">
+    <a th:href="@{/public/index(path=${#strings.contains(param.path[0], '/') ? #strings.substringBeforeLast(param.path[0], '/') : null})}"
+       class="btn btn-outline-secondary">
+      ⬅ Voltar
+    </a>
+  </div>
+
+  <div th:if="${folders.size() > 0}">
+    <h5>Pastas</h5>
+    <ul class="list-group mb-4">
+      <li class="list-group-item d-flex justify-content-between align-items-center"
+          th:each="folder : ${folders}">
+        <span>📁 <span th:text="${folder.name}">Nome da Pasta</span></span>
+        <a th:href="@{/public/index(path=${folder.relativePath})}" class="btn btn-sm btn-secondary">
+          Abrir
+        </a>
+      </li>
+    </ul>
+  </div>
+
+  <div th:if="${files.size() > 0}">
+    <h5>Arquivos</h5>
+    <ul class="list-group">
+      <li class="list-group-item d-flex justify-content-between align-items-center"
+          th:each="file : ${files}">
+        <span>📄 <span th:text="${file.name}">Nome do Arquivo</span></span>
+        <button
+                class="btn btn-sm btn-primary"
+                th:attr="data-file-url=@{/public/view/{path}(path=${file.relativePath})}"
+                onclick="abrirModal(this)">
+          Visualizar
+        </button>
+      </li>
+    </ul>
+  </div>
+
+  <div th:if="${folders.size() == 0 and files.size() == 0}" class="alert alert-info mt-4">
+    Nenhum conteúdo encontrado nesta pasta.
+  </div>
+
+  <!-- Modal -->
+  <div class="modal fade" id="previewModal" tabindex="-1" aria-labelledby="previewModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-xl modal-dialog-centered">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title" id="previewModalLabel">Visualização de Arquivo</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fechar"></button>
+        </div>
+        <div class="modal-body text-center" id="previewContent">
+          <!-- conteúdo será carregado aqui -->
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+  function abrirModal(btn) {
+    const fileUrl = btn.getAttribute('data-file-url');
+    const previewContent = document.getElementById('previewContent');
+
+    const isImage = /\.(jpg|jpeg|png|gif|webp)$/i.test(fileUrl);
+    const isVideo = /\.(mp4|webm|ogg)$/i.test(fileUrl);
+
+    if (isImage) {
+      previewContent.innerHTML = `<img src="${fileUrl}" class="img-fluid rounded" />`;
+    } else if (isVideo) {
+      previewContent.innerHTML = `
+        <video controls class="w-100 rounded" style="max-height: 600px;">
+          <source src="${fileUrl}" type="video/mp4">
+          Seu navegador não suporta vídeo.
+        </video>`;
+    } else {
+      previewContent.innerHTML = `<p>Visualização não suportada para este tipo de arquivo.</p>`;
+    }
+
+    const modal = new bootstrap.Modal(document.getElementById('previewModal'));
+    modal.show();
+  }
+</script>
+</body>
+</html>

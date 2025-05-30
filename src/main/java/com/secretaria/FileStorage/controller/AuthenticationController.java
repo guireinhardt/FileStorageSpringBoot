@@ -10,6 +10,7 @@ import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseCookie;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.AuthenticationException;
@@ -17,11 +18,14 @@ import org.springframework.security.core.userdetails.User;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
+import org.springframework.validation.BindingResult;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 @Controller
 @RequestMapping("auth")
@@ -71,17 +75,34 @@ public class AuthenticationController {
     }
 
     @PostMapping("/register")
-    public ResponseEntity register(@RequestBody @Validated RegisterDTO data) {
-        if (this.repository.findByUsername(data.login()) != null) return ResponseEntity.badRequest().build();
+    public ResponseEntity<?> register(@RequestBody @Validated RegisterDTO data, BindingResult result) {
+        if (result.hasErrors()) {
+            Map<String, String> errors = new HashMap<>();
+            result.getFieldErrors().forEach(fieldError ->
+                    errors.put(fieldError.getField(), fieldError.getDefaultMessage()));
+            return ResponseEntity.badRequest().body(errors);
+        }
+
+        if (this.repository.findByUsername(data.login()) != null) {
+            return ResponseEntity.badRequest().body(Map.of("login", "Login já existe"));
+        }
 
         String encryptedPassword = new BCryptPasswordEncoder().encode(data.password());
-        UsersEntity newUser = new UsersEntity(data.login(),
+
+        UsersEntity newUser = new UsersEntity(
+                data.nome(),
+                data.cpf(),
+                data.login(),
                 encryptedPassword,
-                data.role());
+                data.role()
+        );
 
         this.repository.save(newUser);
         return ResponseEntity.ok().build();
     }
+
+
+
     @GetMapping("/logout")
     public ResponseEntity<Void> logout() {
         // Invalida o cookie JWT no cliente
@@ -122,6 +143,23 @@ public class AuthenticationController {
 
         return "account"; // Recarrega a mesma página com os dados atualizados
     }
+    @PreAuthorize("hasRole('ADMIN')")
+    @GetMapping("/admin/users")
+    public String listUsers(Model model) {
+        model.addAttribute("users", repository.findAll());
+        return "admin/users"; // HTML com a tabela acima
+    }
+
+
+    @PreAuthorize("hasRole('ADMIN')")
+    @PostMapping("/admin/users/{id}/change-password")
+    public String changeUserPassword(@PathVariable Long id, @RequestParam("newPassword") String newPassword) {
+        UsersEntity user = repository.findById(id).orElseThrow(() -> new RuntimeException("Usuário não encontrado"));
+        user.setPassword(new BCryptPasswordEncoder().encode(newPassword));
+        repository.save(user);
+        return "redirect:/admin/users?success";
+    }
+
 
 }
 

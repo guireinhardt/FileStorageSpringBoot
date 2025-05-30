@@ -24,14 +24,23 @@
         <a th:href="@{/advanced-search}">Busca Avançada</a>
     </div>
     <div class="user-menu">
-        <div class="user-icon" onclick="toggleDropdown()">
+        <div class="user-icon">
             <img src="/images/user.jpg" alt="Perfil" class="profile-pic">
         </div>
-        <div class="dropdown-content" id="dropdownMenu">
+        <div class="dropdown-content" id="dropdownMenu" style="display: none;">
             <a href="/auth/account"><i class="fas fa-user-cog"></i> Alterar Dados</a>
+
+            <!-- Exibe somente se for ADMIN -->
+            <div th:if="${#authentication?.principal?.role?.name() == 'admin'}">
+                <p th:text="${#authentication?.principal?.role?.name()}">[papel do usuário]</p>
+                <a href="/auth/admin/users"><i class="fas fa-users-cog"></i> Gerenciar Usuários</a>
+            </div>
+
             <a href="/auth/logout"><i class="fas fa-sign-out-alt"></i> Sair</a>
         </div>
     </div>
+
+
 </div>
 
 <!-- Conteúdo -->

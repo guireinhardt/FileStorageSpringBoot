@@ -37,7 +37,7 @@ public class SecurityConfig {
                             .requestMatchers(HttpMethod.GET, "/auth/login").permitAll()
                             .requestMatchers(HttpMethod.GET, "/auth/register").permitAll()
                             .requestMatchers(HttpMethod.POST, "/auth/register").permitAll()
-                            .requestMatchers(HttpMethod.GET, "/h2-console/").permitAll()
+                            .requestMatchers(HttpMethod.GET, "/h2-console/**").permitAll()
                             .requestMatchers(HttpMethod.GET, "/images/**","/css/**").permitAll()
                             .requestMatchers(HttpMethod.POST, "/h2-console/**").permitAll()
                             .requestMatchers(HttpMethod.GET, "/").authenticated()
@@ -52,6 +52,11 @@ public class SecurityConfig {
 
                             .requestMatchers("/success", "/error").permitAll()
                             .requestMatchers(HttpMethod.POST, "/storage/delete").hasRole("ADMIN") // Apenas admin pode deletar
+
+                            //requests publicos
+                            .requestMatchers(HttpMethod.GET,"/public/**").permitAll()
+                            .requestMatchers(HttpMethod.GET, "/public/view/**").permitAll()
+
                             .anyRequest().authenticated()
                     )
                     .exceptionHandling(exception -> exception
