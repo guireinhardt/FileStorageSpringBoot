@@ -6,7 +6,8 @@ import java.util.Collection;
 
 public enum UsersRole  {
     ADMIN("admin"),
-    USERS("users");
+    USERS("users"),
+    PUBLICO("publico");
 
 
     private String role;

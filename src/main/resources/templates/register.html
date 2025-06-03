@@ -50,7 +50,9 @@
                     <select id="role" name="role" required>
                         <option value="ADMIN" th:selected="${usuario?.role == 'ADMIN'}">Administrador</option>
                         <option value="USERS" th:selected="${usuario?.role == 'USERS'}">Usuário</option>
+                        <option value="PUBLICO" th:selected="${usuario?.role == 'PUBLICO'}">Público</option>
                     </select>
+
                 </div>
 
                 <button type="submit">Registrar</button>

@@ -63,12 +63,27 @@
             });
 
             if (response.ok) {
-                console.log('Login bem-sucedido!');
-                alert('Login realizado com sucesso!');
-                window.location.href = '/';
-            } else {
-                alert('Falha no login. Verifique suas credenciais.');
-            }
+    const data = await response.json();  // pega token + role
+    localStorage.setItem('token', data.token);  // salva token pra usar depois
+
+    // redireciona conforme role:
+    switch(data.role) {
+        case 'ROLE_ADMIN':
+            window.location.href = '/admin/dashboard';
+            break;
+        case 'ROLE_USERS':
+            window.location.href = '/users/home';
+            break;
+        case 'ROLE_PUBLICO':
+            window.location.href = '/public/index';
+            break;
+        default:
+            window.location.href = '/';
+            break;
+    }
+} else {
+    alert('Falha no login. Verifique suas credenciais.');
+}
         } catch (error) {
             console.error('Erro ao fazer login:', error);
             alert('Erro inesperado. Tente novamente.');

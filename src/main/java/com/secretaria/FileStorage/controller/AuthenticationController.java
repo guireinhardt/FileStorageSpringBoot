@@ -14,6 +14,7 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.AuthenticationException;
+import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.userdetails.User;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Controller;
@@ -45,14 +46,18 @@ public class AuthenticationController {
     public String loginPage() {
         return "loginForm"; // Nome do arquivo HTML sem a extensão
     }
-
+    // Login público — só exibe o formulário
+    @GetMapping("/login-public")
+    public String loginPublic() {
+        return "public-login"; // template login-public.html
+    }
     // Método para renderizar a página de registro
     @GetMapping("/register")
     public String showRegistrationForm(Model model) {
         return "register"; // Retorna o nome da página de registro (register.html)
     }
     @PostMapping("/login")
-    public ResponseEntity<LoginResponseDTO> login(@RequestBody  AuthenticationDTO data) {
+    public ResponseEntity<LoginResponseDTO> login(@RequestBody AuthenticationDTO data) {
         logger.debug("Iniciando o processo de login para o usuário: {}", data.login());
 
         var usernamePassword = new UsernamePasswordAuthenticationToken(data.login(), data.password());
@@ -60,22 +65,35 @@ public class AuthenticationController {
 
         logger.debug("Usuário autenticado: {}", auth.getName());
 
-        var token = tokenService.generateToken((UsersEntity ) auth.getPrincipal());
+        var user = (UsersEntity) auth.getPrincipal();
+        var token = tokenService.generateToken(user);
+
+        // Extrai a role
+        String role = user.getAuthorities().stream()
+                .findFirst()
+                .map(GrantedAuthority::getAuthority)
+                .orElse("ROLE_PUBLICO");
+
         logger.debug("Token gerado com sucesso: {}", token);
+        logger.debug("Role extraída: {}", role);
+
         ResponseCookie cookie = ResponseCookie.from("authToken", token)
                 .httpOnly(true)
                 .secure(false)
                 .path("/")
-                .maxAge(60 * 60) //1 hora
+                .maxAge(60 * 60) // 1 hora
                 .sameSite("Lax")
                 .build();
+
         return ResponseEntity.ok()
-                .header(HttpHeaders.SET_COOKIE, cookie.toString()) // Adiciona o cookie ao cabeçalho
-                .body(new LoginResponseDTO(token));
+                .header(HttpHeaders.SET_COOKIE, cookie.toString())
+                .body(new LoginResponseDTO(token, role));
     }
+
 
     @PostMapping("/register")
     public ResponseEntity<?> register(@RequestBody @Validated RegisterDTO data, BindingResult result) {
+        System.out.println("Recebido no register: " + data);
         if (result.hasErrors()) {
             Map<String, String> errors = new HashMap<>();
             result.getFieldErrors().forEach(fieldError ->
@@ -159,7 +177,6 @@ public class AuthenticationController {
         repository.save(user);
         return "redirect:/admin/users?success";
     }
-
 
 }
 

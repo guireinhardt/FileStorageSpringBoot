@@ -24,6 +24,9 @@ public class SecurityConfig {
     SecurityFilter securityFilter;
     @Autowired
     CustomAuthenticationEntryPoint customAuthEntryPoint;
+    @Autowired
+    private CustomAuthenticationSuccessHandler customAuthenticationSuccessHandler;
+
 
 
     @Bean
@@ -56,8 +59,10 @@ public class SecurityConfig {
                             //requests publicos
                             .requestMatchers(HttpMethod.GET,"/public/**").permitAll()
                             .requestMatchers(HttpMethod.GET, "/public/view/**").permitAll()
-
+                            .requestMatchers(HttpMethod.GET, "/public/download/**").hasRole("PUBLICO")
+                            .requestMatchers(HttpMethod.POST, "/public/download-zip/**").hasRole("PUBLICO")
                             .anyRequest().authenticated()
+
                     )
                     .exceptionHandling(exception -> exception
                             .authenticationEntryPoint(customAuthEntryPoint) // redirecionamento personalizado

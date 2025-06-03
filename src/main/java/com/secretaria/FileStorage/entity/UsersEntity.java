@@ -103,9 +103,13 @@ public class UsersEntity implements UserDetails {
     }
     @Override
     public Collection<? extends GrantedAuthority> getAuthorities() {
-        if (this.role == UsersRole.ADMIN)  return List.of(new SimpleGrantedAuthority("ROLE_ADMIN"), new SimpleGrantedAuthority("ROLE_USERS"));
-        else return List.of(new SimpleGrantedAuthority("ROLE_USERS"));
+        return switch (this.role) {
+            case ADMIN -> List.of(new SimpleGrantedAuthority("ROLE_ADMIN"));
+            case USERS -> List.of(new SimpleGrantedAuthority("ROLE_USERS"));
+            case PUBLICO -> List.of(new SimpleGrantedAuthority("ROLE_PUBLICO"));
+        };
     }
+
 
     public void setUsername(String username) {
         this.username = username;

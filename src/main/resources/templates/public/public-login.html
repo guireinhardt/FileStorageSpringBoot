@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="pt-BR" xmlns:th="http://www.thymeleaf.org">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Login</title>
+  <link rel="stylesheet" href="/css/login.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+</head>
+<body>
+<div class="background">
+  <div class="login-container">
+    <div class="form-side">
+      <img src="/images/agri_.png" alt="Logo" class="logo">
+      <h2>Login</h2>
+      <form id="loginForm">
+        <div class="input-group">
+          <i class="fas fa-user icon-left"></i>
+          <input type="text" id="username" placeholder="Usuário" required>
+        </div>
+        <div class="input-group">
+          <i class="fas fa-lock icon-left"></i>
+          <input type="password" placeholder="Senha" required id="password">
+          <button type="button" id="togglePassword" class="toggle-password">
+            <i class="fas fa-eye" id="eyeIcon"></i>
+          </button>
+        </div>
+        <button type="submit">Entrar</button>
+        <p>Não tem uma conta? <a href="/auth/register">Registrar-se</a></p>
+      </form>
+    </div>
+  </div>
+</div>
+
+<script>
+  document.getElementById('togglePassword').addEventListener('click', function() {
+      const passwordInput = document.getElementById('password');
+      const eyeIcon = document.getElementById('eyeIcon');
+      if (passwordInput.type === 'password') {
+          passwordInput.type = 'text';
+          eyeIcon.classList.remove('fa-eye');
+          eyeIcon.classList.add('fa-eye-slash');
+      } else {
+          passwordInput.type = 'password';
+          eyeIcon.classList.remove('fa-eye-slash');
+          eyeIcon.classList.add('fa-eye');
+      }
+  });
+
+  document.getElementById('loginForm').addEventListener('submit', async function(event) {
+      event.preventDefault();
+      const username = document.getElementById('username').value;
+      const password = document.getElementById('password').value;
+
+      try {
+          const response = await fetch('/auth/login', {
+              method: 'POST',
+              headers: {
+                  'Content-Type': 'application/json'
+              },
+              credentials: 'include',
+              body: JSON.stringify({ username, password })
+          });
+
+          if (response.ok) {
+              alert('Login realizado com sucesso!');
+              window.location.href = '/'; // Página após login
+          } else {
+              alert('Falha no login. Verifique suas credenciais.');
+          }
+      } catch (error) {
+          console.error('Erro ao fazer login:', error);
+          alert('Erro inesperado. Tente novamente.');
+      }
+  });
+</script>
+</body>
+</html>

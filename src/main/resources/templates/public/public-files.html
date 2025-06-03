@@ -1,63 +1,78 @@
 <!DOCTYPE html>
 <html xmlns:th="http://www.thymeleaf.org">
 <head>
-  <meta charset="UTF-8">
+  <meta charset="UTF-8" />
   <title>Arquivos Finalizados</title>
-  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" />
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
 </head>
 <body class="bg-light">
 <div class="container mt-5">
   <h2 class="mb-4">📁 Arquivos Finalizados</h2>
 
-  <div th:if="${param.path != null}">
+  <!-- breadcrumb -->
+  <div th:if="${pathParts.size() > 0}">
     <p>
       📌 <strong>Você está em:</strong>
-      <span th:with="parts=${#strings.arraySplit(param.path[0], '/')}"
-            th:each="part, iterStat : ${parts}">
-      <a th:href="@{/public/index(path=${#strings.arrayJoin(T(java.util.Arrays).copyOfRange(parts, 0, iterStat.index + 1), '/')})}"
+      <span th:each="part, iterStat : ${pathParts}">
+      <a th:href="@{/public/index(path=${#strings.arrayJoin(pathParts.subList(0, iterStat.index + 1), '/')})}"
          th:text="${part}">parte</a>
       <span th:if="${!iterStat.last}"> / </span>
     </span>
     </p>
   </div>
 
-
-  <div class="mb-3" th:if="${param.path != null}">
-    <a th:href="@{/public/index(path=${#strings.contains(param.path[0], '/') ? #strings.substringBeforeLast(param.path[0], '/') : null})}"
+  <!-- botão voltar -->
+  <div class="mb-3" th:if="${currentPath != null}">
+    <a th:href="@{/public/index(path=${#strings.contains(currentPath, '/') ? #strings.substringBeforeLast(currentPath, '/') : null})}"
        class="btn btn-outline-secondary">
       ⬅ Voltar
     </a>
   </div>
 
-  <div th:if="${folders.size() > 0}">
-    <h5>Pastas</h5>
-    <ul class="list-group mb-4">
-      <li class="list-group-item d-flex justify-content-between align-items-center"
-          th:each="folder : ${folders}">
-        <span>📁 <span th:text="${folder.name}">Nome da Pasta</span></span>
-        <a th:href="@{/public/index(path=${folder.relativePath})}" class="btn btn-sm btn-secondary">
-          Abrir
-        </a>
-      </li>
-    </ul>
-  </div>
+  <!-- arquivos com checkbox -->
+  <form method="post" th:action="@{/public/download-zip}" id="multiDownloadForm">
+    <div th:if="${folders.size() > 0}">
+      <h5>Pastas</h5>
+      <ul class="list-group mb-4">
+        <li class="list-group-item d-flex justify-content-between align-items-center"
+            th:each="folder : ${folders}">
+          <span>📁 <span th:text="${folder.name}">Nome da Pasta</span></span>
+          <a th:href="@{/public/index(path=${folder.relativePath})}" class="btn btn-sm btn-secondary">
+            Abrir
+          </a>
+        </li>
+      </ul>
+    </div>
 
-  <div th:if="${files.size() > 0}">
-    <h5>Arquivos</h5>
-    <ul class="list-group">
-      <li class="list-group-item d-flex justify-content-between align-items-center"
-          th:each="file : ${files}">
-        <span>📄 <span th:text="${file.name}">Nome do Arquivo</span></span>
-        <button
-                class="btn btn-sm btn-primary"
-                th:attr="data-file-url=@{/public/view/{path}(path=${file.relativePath})}"
-                onclick="abrirModal(this)">
-          Visualizar
-        </button>
-      </li>
-    </ul>
-  </div>
+    <div th:if="${files.size() > 0}">
+      <h5>Arquivos</h5>
+      <ul class="list-group">
+        <li class="list-group-item d-flex justify-content-between align-items-center"
+            th:each="file : ${files}">
+          <div>
+            <input type="checkbox" name="files" th:value="${file.relativePath}" />
+            📄 <span th:text="${file.name}">Nome do Arquivo</span>
+          </div>
+          <div>
+            <button
+                    class="btn btn-sm btn-primary"
+                    th:attr="data-file-url=@{/public/view/{path}(path=${file.relativePath})}"
+                    type="button"
+                    onclick="abrirModal(this)">
+              Visualizar
+            </button>
+            <a th:href="@{'/public/download/' + ${file.relativePath}}" class="btn btn-sm btn-success">Download</a>
+          </div>
+        </li>
+      </ul>
+    </div>
+
+    <div class="mt-3" th:if="${files.size() > 0}">
+      <button type="submit" class="btn btn-warning">Download de Arquivos Selecionados (.zip)</button>
+    </div>
+  </form>
+
 
   <div th:if="${folders.size() == 0 and files.size() == 0}" class="alert alert-info mt-4">
     Nenhum conteúdo encontrado nesta pasta.
@@ -101,6 +116,38 @@
 
     const modal = new bootstrap.Modal(document.getElementById('previewModal'));
     modal.show();
+  }
+
+  function baixarSelecionados() {
+    const form = document.getElementById('multiDownloadForm');
+    const checkedFiles = Array.from(form.querySelectorAll('input[name="files"]:checked'))
+                              .map(cb => cb.value);
+
+    if (checkedFiles.length === 0) {
+      alert("Selecione ao menos um arquivo.");
+      return;
+    }
+
+    fetch('/public/download-zip', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/x-www-form-urlencoded'},
+      body: new URLSearchParams(checkedFiles.map(f => ['files', f]))
+    })
+    .then(response => {
+      if (!response.ok) throw new Error('Erro no servidor ao gerar ZIP');
+      return response.blob();
+    })
+    .then(blob => {
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = 'arquivos.zip';
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      window.URL.revokeObjectURL(url);
+    })
+    .catch(err => alert('Erro no download: ' + err));
   }
 </script>
 </body>
