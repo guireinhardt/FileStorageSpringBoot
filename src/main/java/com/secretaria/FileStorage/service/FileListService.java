@@ -1,15 +1,19 @@
 package com.secretaria.FileStorage.service;
 
 import com.secretaria.FileStorage.config.FileStorageConfig;
+import com.secretaria.FileStorage.dto.FileResultDTO;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.time.LocalDate;
+import java.time.ZoneId;
 import java.util.List;
 import java.util.logging.Logger;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 @Service
 public class FileListService {
@@ -43,4 +47,9 @@ public class FileListService {
     public Path getRootLocation() {
         return rootLocation; // Retorna o diretório raiz
     }
+
+
+
+
+
 }

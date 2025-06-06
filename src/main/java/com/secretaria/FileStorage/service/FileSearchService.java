@@ -261,14 +261,47 @@ public class FileSearchService {
 
         return result;
     }
+    public List<FileResultDTO> searchFilesWithinRoot(String query, String keyword, List<String> subkeywords, Path root) throws IOException {
+        try (Stream<Path> paths = Files.walk(root)) {
+            return paths
+                    .filter(Files::isRegularFile)
+                    .map(path -> {
+                        // Aqui pode buscar a data de criação, se quiser
+                        LocalDate creationDate = null;
+                        try {
+                            creationDate = Files.getLastModifiedTime(path)
+                                    .toInstant()
+                                    .atZone(ZoneId.systemDefault())
+                                    .toLocalDate();
+                        } catch (IOException e) {
+                            // ignorar erro de data
+                        }
+                        return new FileResultDTO(path.getFileName().toString(), path.toString(), creationDate);
+                    })
+                    .filter(file -> {
+                        String lowerName = file.getName().toLowerCase();
 
+                        boolean matchesQuery = (query == null || query.isBlank()) || lowerName.contains(query.toLowerCase());
+                        boolean matchesKeyword = (keyword == null || keyword.isBlank()) || lowerName.contains(keyword.toLowerCase());
+                        boolean matchesSubkeywords = (subkeywords == null || subkeywords.isEmpty()) ||
+                                subkeywords.stream()
+                                        .map(String::toLowerCase)
+                                        .anyMatch(lowerName::contains);
 
-
-
-
-
-
-
-
-
+                        return matchesQuery && matchesKeyword && matchesSubkeywords;
+                    })
+                    .collect(Collectors.toList());
+        }
+    }
 }
+
+
+
+
+
+
+
+
+
+
+

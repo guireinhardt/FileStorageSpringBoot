@@ -1,6 +1,7 @@
 package com.secretaria.FileStorage.controller.publico;
 
 import com.secretaria.FileStorage.exception.FileStorageException;
+import com.secretaria.FileStorage.infra.log.AuditLogService;
 import com.secretaria.FileStorage.service.FileListService;
 import com.secretaria.FileStorage.service.FileSearchService;
 import com.secretaria.FileStorage.vo.FileVO;
@@ -22,6 +23,7 @@ import java.net.URLDecoder;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.security.Principal;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Stream;
@@ -35,10 +37,12 @@ public class PublicController {
     private FileListService fileListService;
     @Autowired
     private FileSearchService fileSearchService;
+    @Autowired
+    private AuditLogService auditLogService;
 
 
     @GetMapping("/index")
-    public String listPublicFiles(@RequestParam(name = "path", required = false) String path, Model model) {
+    public String listPublicFiles(@RequestParam(name = "path", required = false) String path, Model model, Principal principal) {
         Path basePath = fileListService.getRootLocation().resolve("02.FINALIZADOS");
         Path targetPath = (path != null && !path.isEmpty()) ? basePath.resolve(path) : basePath;
 
@@ -70,6 +74,13 @@ public class PublicController {
         model.addAttribute("files", files);
         model.addAttribute("pathParts", pathParts);
         model.addAttribute("currentPath", path); // para montar os hrefs do breadcrumb
+
+        // Log de navegação
+        if (principal != null) {
+            String usuario = principal.getName();
+            String caminho = (path != null && !path.isEmpty()) ? path : "/";
+            auditLogService.log(usuario, "NAVEGAÇÃO", "Acessou a pasta: " + caminho);
+        }
 
         return "public/public-files";
     }
@@ -104,7 +115,7 @@ public class PublicController {
     }
     @GetMapping("/download/**")
     @ResponseBody
-    public ResponseEntity<Resource> downloadArquivo(HttpServletRequest request) {
+    public ResponseEntity<Resource> downloadArquivo(HttpServletRequest request,Principal principal) {
         try {
             String requestURI = request.getRequestURI();
             String basePath = "/public/download/";
@@ -118,6 +129,11 @@ public class PublicController {
             UrlResource resource = new UrlResource(file.toUri());
             if (!resource.exists()) {
                 return ResponseEntity.notFound().build();
+            }
+            // LOG DO DOWNLOAD
+            if (principal != null) {
+                String usuario = principal.getName();
+                auditLogService.log(usuario, "DOWNLOAD", "Baixou o arquivo: " + filePath);
             }
 
             String contentDisposition = "attachment; filename=\"" + file.getFileName().toString() + "\"";
@@ -135,7 +151,7 @@ public class PublicController {
         }
     }
     @PostMapping("/download-zip")
-    public void downloadMultipleFiles(@RequestParam List<String> files, HttpServletResponse response) throws IOException {
+    public void downloadMultipleFiles(@RequestParam List<String> files, HttpServletResponse response, Principal principal) throws IOException {
         Path basePath = fileListService.getRootLocation().resolve("02.FINALIZADOS");
 
         response.setContentType("application/zip");
@@ -154,10 +170,17 @@ public class PublicController {
                     zipOut.closeEntry();
                 }
             }
+            // LOG DO DOWNLOAD-ZIP
+            if (principal != null) {
+                String usuario = principal.getName();
+                auditLogService.log(usuario, "DOWNLOAD-ZIP", "Baixou arquivos em ZIP: " + String.join(", ", files));
+            }
+
             zipOut.finish();
+        }
         }
     }
 
 
 
-}
+

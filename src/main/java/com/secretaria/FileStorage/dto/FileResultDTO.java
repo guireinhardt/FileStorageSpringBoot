@@ -46,4 +46,9 @@ public class FileResultDTO {
         }
         return "";
     }
+    public String getPublicPath() {
+        // Remove apenas o prefixo "uploads/"
+        return fullPath.startsWith("uploads/") ? fullPath.substring("uploads/".length()) : fullPath;
+    }
+
 }
