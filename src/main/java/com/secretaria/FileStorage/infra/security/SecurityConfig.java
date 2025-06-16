@@ -38,8 +38,8 @@ public class SecurityConfig {
                     .authorizeHttpRequests(authorize -> authorize
                             .requestMatchers(HttpMethod.POST, "/auth/login").permitAll()
                             .requestMatchers(HttpMethod.GET, "/auth/login").permitAll()
-                            .requestMatchers(HttpMethod.GET, "/auth/register").hasRole("ADMIN")
-                            .requestMatchers(HttpMethod.POST, "/auth/register").hasRole("ADMIN")
+                            .requestMatchers(HttpMethod.GET, "/auth/register").permitAll()
+                            .requestMatchers(HttpMethod.POST, "/auth/register").permitAll()
                             .requestMatchers(HttpMethod.GET, "/h2-console/**").permitAll()
                             .requestMatchers(HttpMethod.GET, "/images/**","/css/**").permitAll()
                             .requestMatchers(HttpMethod.POST, "/h2-console/**").permitAll()

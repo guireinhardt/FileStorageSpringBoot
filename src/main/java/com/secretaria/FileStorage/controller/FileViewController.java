@@ -57,6 +57,8 @@ public class FileViewController {
     @Autowired
     private KeywordConfig keywordConfig;
     @Autowired
+    private  KeywordService keywordService;
+    @Autowired
     private TokenService tokenService;
 
     private final FileViewService fileViewService;
@@ -179,17 +181,25 @@ public class FileViewController {
     @Autowired
     private CityService cityService;
 
+    @GetMapping("/view/subkeywords")
+    @ResponseBody
+    public List<String> getSubkeywordsP(@RequestParam String keyword) {
+        return keywordService.getKeywordMap().getOrDefault(keyword, List.of());
+    }
     @GetMapping("/search")
-    public String searchFiles(
+    public String searchFilesPrivate(
             @RequestParam(required = false) String query,
             @RequestParam(required = false) String keyword,
+            @RequestParam(required = false) List<String> subkeywords,
             @RequestParam(required = false) String institute,
             @RequestParam(required = false) String city,
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate startDate,
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate endDate,
             Model model) throws IOException {
+
         boolean hasFilters = (query != null && !query.isBlank())
                 || (keyword != null && !keyword.isBlank())
+                || (subkeywords != null && !subkeywords.isEmpty())
                 || (institute != null && !institute.isBlank())
                 || (city != null && !city.isBlank())
                 || startDate != null
@@ -198,15 +208,20 @@ public class FileViewController {
         List<FileResultDTO> results = new ArrayList<>();
 
         if (hasFilters) {
-            results = fileSearchService.searchFiles(query, keyword, institute, city, startDate, endDate);
+            results = fileSearchService.searchFiles(query, keyword,subkeywords, institute, city, startDate, endDate);
         }
+
+        List<String> keywords = new ArrayList<>(keywordService.getDisplayMap().keySet());
+        Map<String, List<String>> subkeywordsMap = keywordService.getKeywordMap();
 
         model.addAttribute("files", results);
         model.addAttribute("hasFilters", hasFilters);
 
-        // Adiciona as listas para popular selects
-        model.addAttribute("keywords", keywordConfig.getKeywordList());
+        model.addAttribute("keywords", keywords);
+        model.addAttribute("displayMap", keywordService.getDisplayMap());
         model.addAttribute("selectedKeyword", keyword);
+        model.addAttribute("subkeywordsMap", subkeywordsMap);
+        model.addAttribute("selectedSubkeywords", subkeywords != null ? subkeywords : new ArrayList<>());
 
         model.addAttribute("cities", cityService.getAllCities());
         model.addAttribute("selectedCity", city);
@@ -217,8 +232,14 @@ public class FileViewController {
         model.addAttribute("startDate", startDate);
         model.addAttribute("endDate", endDate);
 
-        return "search";  // nome do template Thymeleaf
+        return "search"; // <- ou o nome da sua tela privada
     }
+
+
+
+
+
+
 
 
 

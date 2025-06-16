@@ -164,6 +164,56 @@ function deleteFile(fileName) {
 
     }
 }
+// Objeto das subpalavras vindo do backend como JSON
+
+    function updateSubkeywords() {
+        const keyword = document.getElementById('keyword').value;
+        const subkeywordsContainer = document.getElementById('subkeywords-container');
+        const subkeywordsList = document.getElementById('subkeywords-list');
+
+        if (!keyword) {
+            subkeywordsContainer.style.display = 'none';
+            subkeywordsList.innerHTML = '';
+            return;
+        }
+
+        fetch('/view/subkeywords?keyword=' + keyword)
+            .then(response => response.json())
+            .then(subkeywords => {
+                if (subkeywords.length > 0) {
+                    subkeywordsList.innerHTML = '';
+                    subkeywords.forEach(subkeyword => {
+                        const checkboxId = 'subkeyword_' + subkeyword.replace(/\s+/g, '_');
+
+                        const checkbox = document.createElement('input');
+                        checkbox.type = 'checkbox';
+                        checkbox.name = 'subkeywords';
+                        checkbox.value = subkeyword;
+                        checkbox.id = checkboxId;
+                        checkbox.classList.add('form-check-input');
+
+                        const label = document.createElement('label');
+                        label.htmlFor = checkboxId;
+                        label.textContent = subkeyword;
+                        label.classList.add('form-check-label');
+
+                        const div = document.createElement('div');
+                        div.classList.add('form-check');
+                        div.appendChild(checkbox);
+                        div.appendChild(label);
+
+                        subkeywordsList.appendChild(div);
+                    });
+                    subkeywordsContainer.style.display = 'block';
+                } else {
+                    subkeywordsContainer.style.display = 'none';
+                    subkeywordsList.innerHTML = '';
+                }
+            });
+    }
+
+
+
 
 
 

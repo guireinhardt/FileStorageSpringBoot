@@ -41,7 +41,7 @@
             <select id="keyword" name="keyword" class="form-select" onchange="updateSubkeywords()">
                 <option value="">-- Selecione --</option>
                 <th:block th:each="key : ${keywords}">
-                    <option th:value="${key}" th:text="${displayMap.get(key)}" th:selected="${key == keyword}"></option>
+                    <option th:value="${key}" th:text="${displayMap.get(key)}" th:selected="${key == selectedKeyword}"></option>
                 </th:block>
             </select>
         </div>
@@ -49,19 +49,20 @@
         <div class="mb-3" id="subkeywords-container">
             <label class="form-label">Subpalavras-chave</label>
             <div id="subkeywords-list" class="form-check">
-                <th:block th:if="${keyword != null and keyword != '' and subkeywordsMap.containsKey(keyword)}">
-                    <th:block th:each="subkey : ${subkeywordsMap.get(keyword)}">
+                <th:block th:if="${selectedKeyword != null and selectedKeyword != '' and subkeywordsMap.containsKey(selectedKeyword)}">
+                    <th:block th:each="subkey : ${subkeywordsMap.get(selectedKeyword)}">
                         <div class="form-check">
                             <input class="form-check-input" type="checkbox"
                                    th:id="${subkey}" th:name="subkeywords"
                                    th:value="${subkey}"
-                                   th:checked="${selectedSubkeywords.contains(subkey)}" />
+                                   th:checked="${selectedSubkeywords != null and selectedSubkeywords.contains(subkey)}" />
                             <label class="form-check-label" th:for="${subkey}" th:text="${subkey}"></label>
                         </div>
                     </th:block>
                 </th:block>
             </div>
         </div>
+
 
         <button type="submit" class="btn btn-primary">Buscar</button>
     </form>

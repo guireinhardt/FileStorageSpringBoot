@@ -36,6 +36,14 @@ public class UsersEntity implements UserDetails {
 
     @Enumerated(EnumType.STRING)
     private UsersRole role;
+    @Column(nullable = false)
+    private boolean enabled = true;
+
+
+    public void setEnabled(boolean enabled) {
+        this.enabled = enabled;
+    }
+
 
     public String getNome() {
         return nome;
@@ -84,22 +92,22 @@ public class UsersEntity implements UserDetails {
 
     @Override
     public boolean isAccountNonExpired() {
-        return UserDetails.super.isAccountNonExpired();
+        return true;
     }
 
     @Override
     public boolean isAccountNonLocked() {
-        return UserDetails.super.isAccountNonLocked();
+        return true;
     }
 
     @Override
     public boolean isCredentialsNonExpired() {
-        return UserDetails.super.isCredentialsNonExpired();
+        return true;
     }
 
     @Override
     public boolean isEnabled() {
-        return UserDetails.super.isEnabled();
+        return enabled;
     }
     @Override
     public Collection<? extends GrantedAuthority> getAuthorities() {

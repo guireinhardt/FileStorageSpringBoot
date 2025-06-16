@@ -2,6 +2,7 @@ package com.secretaria.FileStorage.service;
 
 import com.secretaria.FileStorage.config.FileStorageConfig;
 import com.secretaria.FileStorage.dto.FileResultDTO;
+import com.secretaria.FileStorage.utils.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -33,8 +34,9 @@ public class FileSearchService {
     }
 
     public List<FileResultDTO> searchFiles(
-            String query,     // texto livre, pode ser nome do arquivo ou palavras
-            String keyword,   // palavra-chave (ex: campo específico)
+            String query,
+            String keyword,
+            List<String> subkeywords,
             String institute,
             String city,
             LocalDate startDate,
@@ -42,16 +44,24 @@ public class FileSearchService {
 
         List<String> queryTerms = (query == null || query.isBlank()) ?
                 Collections.emptyList() :
-                Arrays.stream(query.toLowerCase().split("\\s+"))
+                Arrays.stream(StringUtils.normalize(query).split("\\s+"))
                         .filter(term -> !term.isBlank())
                         .collect(Collectors.toList());
+
+        String normalizedKeyword = StringUtils.normalize(keyword);
+        List<String> normalizedSubkeywords = subkeywords != null
+                ? subkeywords.stream().map(StringUtils::normalize).collect(Collectors.toList())
+                : Collections.emptyList();
+
+        String normalizedInstitute = StringUtils.normalize(institute);
+        String normalizedCity = StringUtils.normalize(city);
 
         try (Stream<Path> paths = Files.walk(Paths.get(fileStorageLocation))) {
             return paths
                     .filter(Files::isRegularFile)
                     .filter(path -> !path.toString().toLowerCase().contains("lixeira"))
                     .filter(path -> {
-                        String fileName = path.getFileName().toString().toLowerCase();
+                        String fileName = StringUtils.normalize(path.getFileName().toString());
 
                         // Busca por query/texto livre no nome do arquivo
                         if (!queryTerms.isEmpty() &&
@@ -60,17 +70,23 @@ public class FileSearchService {
                         }
 
                         // Busca pela palavra-chave (keyword)
-                        if (keyword != null && !keyword.isBlank() && !fileName.contains(keyword.toLowerCase())) {
+                        if (normalizedKeyword != null && !normalizedKeyword.isBlank() && !fileName.contains(normalizedKeyword)) {
+                            return false;
+                        }
+
+                        // Busca por subpalavras
+                        if (!normalizedSubkeywords.isEmpty() &&
+                                normalizedSubkeywords.stream().noneMatch(fileName::contains)) {
                             return false;
                         }
 
                         // Busca pelo instituto
-                        if (institute != null && !institute.isBlank() && !fileName.contains(institute.toLowerCase())) {
+                        if (normalizedInstitute != null && !normalizedInstitute.isBlank() && !fileName.contains(normalizedInstitute)) {
                             return false;
                         }
 
                         // Busca pela cidade
-                        if (city != null && !city.isBlank() && !fileName.contains(city.toLowerCase())) {
+                        if (normalizedCity != null && !normalizedCity.isBlank() && !fileName.contains(normalizedCity)) {
                             return false;
                         }
 
@@ -78,7 +94,6 @@ public class FileSearchService {
                         if (startDate != null || endDate != null) {
                             try {
                                 String fileNameOriginal = path.getFileName().toString();
-                                // Extrai os números do início para tentar pegar a data
                                 String prefix = fileNameOriginal.replaceAll("[^0-9]", "");
                                 LocalDate fileDate = null;
 
@@ -96,7 +111,6 @@ public class FileSearchService {
                                 }
 
                             } catch (Exception e) {
-                                // Se não conseguir extrair data, descarta o arquivo quando filtro de data existe
                                 return false;
                             }
                         }
@@ -110,6 +124,7 @@ public class FileSearchService {
                     .collect(Collectors.toList());
         }
     }
+
 
 
 
@@ -228,6 +243,10 @@ public class FileSearchService {
 
         List<FileResultDTO> result = new ArrayList<>();
 
+        // Normaliza a query e a cidade logo no começo
+        String normalizedQuery = StringUtils.normalize(query);
+        String normalizedCity = StringUtils.normalize(city);
+
         for (String folderName : folders) {
             Path folder = Paths.get(folderName);  // monta caminho completo
 
@@ -239,14 +258,15 @@ public class FileSearchService {
             try (Stream<Path> paths = Files.walk(folder)) {
                 List<FileResultDTO> filesInFolder = paths
                         .filter(Files::isRegularFile)
-                        .filter(path -> !path.toString().toLowerCase().contains("lixeira"))
+                        .filter(path -> !StringUtils.normalize(path.toString()).contains("lixeira"))
                         .filter(path -> {
-                            String fileName = path.getFileName().toString().toLowerCase();
+                            String fileName = path.getFileName().toString();
+                            String normalizedFileName = StringUtils.normalize(fileName);
 
-                            if (query != null && !query.isBlank() && !fileName.contains(query.toLowerCase())) {
+                            if (normalizedQuery != null && !normalizedQuery.isBlank() && !normalizedFileName.contains(normalizedQuery)) {
                                 return false;
                             }
-                            if (city != null && !city.isBlank() && !fileName.contains(city.toLowerCase())) {
+                            if (normalizedCity != null && !normalizedCity.isBlank() && !normalizedFileName.contains(normalizedCity)) {
                                 return false;
                             }
 
@@ -261,6 +281,7 @@ public class FileSearchService {
 
         return result;
     }
+
     public List<FileResultDTO> searchFilesWithinRoot(String query, String keyword, List<String> subkeywords, Path root) throws IOException {
         try (Stream<Path> paths = Files.walk(root)) {
             return paths

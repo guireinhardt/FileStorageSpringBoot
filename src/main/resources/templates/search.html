@@ -27,13 +27,34 @@
                        th:value="${query}" />
             </div>
 
-            <div class="col-md-3">
-                <select name="keyword" id="keyword" class="form-select">
-                    <option value="">Selecione uma palavra-chave</option>
-                    <option th:each="keyword : ${keywords}" th:value="${keyword}" th:text="${keyword}"
-                            th:selected="${keyword == selectedKeyword}"></option>
+            <div class="mb-3">
+                <label for="keyword" class="form-label">Palavra-chave</label>
+                <select id="keyword" name="keyword" class="form-select" onchange="updateSubkeywords()">
+                    <option value="">-- Selecione --</option>
+                    <th:block th:each="key : ${keywords}">
+                        <option th:value="${key}" th:text="${displayMap.get(key)}" th:selected="${key == selectedKeyword}"></option>
+                    </th:block>
                 </select>
             </div>
+
+            <div class="mb-3" id="subkeywords-container">
+                <label class="form-label">Subpalavras-chave</label>
+                <div id="subkeywords-list" class="form-check">
+                    <th:block th:if="${selectedKeyword != null and selectedKeyword != '' and subkeywordsMap.containsKey(selectedKeyword)}">
+                        <th:block th:each="subkey : ${subkeywordsMap.get(selectedKeyword)}">
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox"
+                                       th:id="${subkey}" th:name="subkeywords"
+                                       th:value="${subkey}"
+                                       th:checked="${selectedSubkeywords != null and selectedSubkeywords.contains(subkey)}" />
+                                <label class="form-check-label" th:for="${subkey}" th:text="${subkey}"></label>
+                            </div>
+                        </th:block>
+                    </th:block>
+                </div>
+            </div>
+
+
 
             <div class="col-md-3">
                 <select name="institute" class="form-select">

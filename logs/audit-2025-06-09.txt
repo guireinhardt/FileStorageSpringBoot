@@ -1,0 +1,3 @@
+[2025-06-09T11:07:17.468935800] Usuário: jamesed | Ação: NAVEGAÇÃO | Detalhes: Acessou a pasta: /
+[2025-06-09T11:07:17.468935800] Usuário: jamesed | Ação: NAVEGAÇÃO | Detalhes: Acessou a pasta: /
+[2025-06-09T11:08:48.181237300] Usuário: jamesed | Ação: NAVEGAÇÃO | Detalhes: Acessou a pasta: /

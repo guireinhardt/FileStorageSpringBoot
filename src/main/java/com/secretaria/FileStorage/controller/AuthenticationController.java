@@ -46,16 +46,19 @@ public class AuthenticationController {
     public String loginPage() {
         return "loginForm"; // Nome do arquivo HTML sem a extensão
     }
+
     // Login público — só exibe o formulário
     @GetMapping("/login-public")
     public String loginPublic() {
         return "public-login"; // template login-public.html
     }
+
     // Método para renderizar a página de registro
     @GetMapping("/register")
     public String showRegistrationForm(Model model) {
         return "register"; // Retorna o nome da página de registro (register.html)
     }
+
     @PostMapping("/login")
     public ResponseEntity<LoginResponseDTO> login(@RequestBody AuthenticationDTO data) {
         logger.debug("Iniciando o processo de login para o usuário: {}", data.login());
@@ -120,7 +123,6 @@ public class AuthenticationController {
     }
 
 
-
     @GetMapping("/logout")
     public ResponseEntity<Void> logout() {
         // Invalida o cookie JWT no cliente
@@ -136,6 +138,7 @@ public class AuthenticationController {
                 .header(HttpHeaders.SET_COOKIE, cookie.toString())
                 .build();
     }
+
     @GetMapping("/account")
     public String accountPage(@CookieValue("authToken") String token, Model model) {
         String login = tokenService.validateToken(token);
@@ -161,13 +164,13 @@ public class AuthenticationController {
 
         return "account"; // Recarrega a mesma página com os dados atualizados
     }
+
     @PreAuthorize("hasRole('ADMIN')")
     @GetMapping("/admin/users")
     public String listUsers(Model model) {
         model.addAttribute("users", repository.findAll());
-        return "admin/users"; // HTML com a tabela acima
+        return "admin/users";
     }
-
 
     @PreAuthorize("hasRole('ADMIN')")
     @PostMapping("/admin/users/{id}/change-password")
@@ -177,6 +180,64 @@ public class AuthenticationController {
         repository.save(user);
         return "redirect:/admin/users?success";
     }
+
+    @PreAuthorize("hasRole('ADMIN')")
+    @PostMapping("/admin/users/{id}/change-role")
+    public String changeUserRole(@PathVariable Long id, @RequestParam("newRole") UsersRole newRole) {
+        UsersEntity user = repository.findById(id).orElseThrow(() -> new RuntimeException("Usuário não encontrado"));
+        user.setRole(newRole);
+        repository.save(user);
+        return "redirect:/admin/users?success";
+    }
+
+    @PreAuthorize("hasRole('ADMIN')")
+    @PostMapping("/admin/users/{id}/delete")
+    public String deleteUser(@PathVariable Long id) {
+        repository.deleteById(id);
+        return "redirect:/admin/users?deleted";
+    }
+
+    @PreAuthorize("hasRole('ADMIN')")
+    @PostMapping("/admin/users/{id}/toggle-status")
+    public String toggleUserStatus(@PathVariable Long id) {
+        UsersEntity user = repository.findById(id).orElseThrow(() -> new RuntimeException("Usuário não encontrado"));
+        user.setEnabled(!user.isEnabled());
+        repository.save(user);
+        return "redirect:/admin/users?statusChanged";
+    }
+
+    @PreAuthorize("hasRole('ADMIN')")
+    @GetMapping("/auth/account/{id}")
+    public String editAccount(@PathVariable Long id, Model model) {
+        UsersEntity user = repository.findById(id).orElseThrow(() -> new RuntimeException("Usuário não encontrado"));
+        model.addAttribute("user", user);
+        return "account/edit-account";
+    }
+
+    @PreAuthorize("hasRole('ADMIN')")
+    @PostMapping("/auth/account/{id}")
+    public String updateAccount(@PathVariable Long id,
+                                @RequestParam String username,
+                                @RequestParam(required = false) String password,
+                                Model model) {
+        UsersEntity user = repository.findById(id).orElseThrow(() -> new RuntimeException("Usuário não encontrado"));
+
+        user.setUsername(username);
+
+        if (password != null && !password.isEmpty()) {
+            user.setPassword(new BCryptPasswordEncoder().encode(password));
+        }
+
+        repository.save(user);
+        model.addAttribute("user", user);
+        model.addAttribute("success", true);
+        return "account/edit-account";
+    }
+
+
+
+
+
 
 }
 

@@ -38,11 +38,18 @@ public class AdvancedSearchController {
     private FileSearchService fileSearchService;
     @Autowired
     private KeywordConfig keywordConfig;
+    @Autowired
+    private  KeywordService keywordService;
 
-
+    @GetMapping("/advanced/subkeywords")
+    @ResponseBody
+    public List<String> getSubkeywordsP(@RequestParam String keyword) {
+        return keywordService.getKeywordMap().getOrDefault(keyword, List.of());
+    }
     @GetMapping("")
     public String showForm(Model model) {
         preencherModelPadrao(model);
+
         model.addAttribute("query", "");
         model.addAttribute("selectedCity", "");
         model.addAttribute("selectedInstitute", "");
@@ -52,10 +59,16 @@ public class AdvancedSearchController {
         model.addAttribute("foldersSet", Collections.emptySet());
 
         // Adiciona as palavras-chave
-        model.addAttribute("keywords", keywordConfig.getKeywordList());
+        model.addAttribute("displayMap", keywordService.getDisplayMap());
         model.addAttribute("keyword", ""); // valor inicial do select
+
+        // Adiciona subpalavras selecionadas como vazio no carregamento inicial
+        model.addAttribute("selectedSubkeywords", List.of());
+
         return "advancedSearch";
     }
+
+
 
     @PostMapping("")
     public String search(
@@ -64,6 +77,7 @@ public class AdvancedSearchController {
             @RequestParam(required = false, name = "folders") List<String> selectedFolders,
             @RequestParam(required = false) String institute,
             @RequestParam(required = false) String keyword,
+            @RequestParam(required = false) List<String> subkeywords, // ADICIONAR AQUI
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate startDate,
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate endDate,
             Model model) throws IOException {
@@ -76,8 +90,8 @@ public class AdvancedSearchController {
             // Busca restrita às pastas selecionadas
             files = fileSearchService.searchFilesByFolders(query, city, selectedFolders);
         } else {
-            // Busca global com todos os filtros
-            files = fileSearchService.searchFiles(query, keyword, institute, city, startDate, endDate);
+            // Busca global com todos os filtros (agora com subkeywords)
+            files = fileSearchService.searchFiles(query, keyword, subkeywords, institute, city, startDate, endDate);
         }
 
         // Monta o conjunto de pastas para usar na view
@@ -88,7 +102,6 @@ public class AdvancedSearchController {
                 })
                 .map(FileResultDTO::getFullPath)
                 .collect(Collectors.toSet());
-
 
         preencherModelPadrao(model);
 
@@ -102,9 +115,11 @@ public class AdvancedSearchController {
 
         model.addAttribute("keywords", keywordConfig.getKeywordList());
         model.addAttribute("keyword", keyword);
+        model.addAttribute("selectedSubkeywords", subkeywords); // Adicione isso para manter a seleção no form
 
         return "advancedSearch";
     }
+
 
 
     private void preencherModelPadrao(Model model) {
