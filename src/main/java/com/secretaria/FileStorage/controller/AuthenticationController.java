@@ -205,14 +205,14 @@ public class AuthenticationController {
         repository.save(user);
         return "redirect:/admin/users?statusChanged";
     }
-
+    /*
     @PreAuthorize("hasRole('ADMIN')")
     @GetMapping("/auth/account/{id}")
     public String editAccount(@PathVariable Long id, Model model) {
         UsersEntity user = repository.findById(id).orElseThrow(() -> new RuntimeException("Usuário não encontrado"));
         model.addAttribute("user", user);
         return "account/edit-account";
-    }
+    } */
 
     @PreAuthorize("hasRole('ADMIN')")
     @PostMapping("/auth/account/{id}")
@@ -233,6 +233,69 @@ public class AuthenticationController {
         model.addAttribute("success", true);
         return "account/edit-account";
     }
+    @PreAuthorize("hasRole('ADMIN')")
+    @GetMapping("/admin/users/{id}/details-edit")
+    public String viewAndEditUserDetails(@PathVariable Long id, Model model) {
+        // Busca o usuário pelo ID
+        UsersEntity user = repository.findById(id).orElseThrow(() -> new RuntimeException("Usuário não encontrado"));
+
+        // Adiciona o usuário ao modelo para exibição e edição na mesma página
+        model.addAttribute("user", user);
+
+        // Lista de roles para o select (caso o administrador queira alterar a role)
+        model.addAttribute("roles", Arrays.asList("ADMIN", "USERS", "PUBLICO"));
+
+        return "admin/user-details"; // Página que exibe os detalhes e permite a edição
+    }
+
+    @PreAuthorize("hasRole('ADMIN')")
+    @PostMapping("/admin/users/{id}/update-role")
+    public String updateUserRole(@PathVariable Long id, @RequestParam("newRole") String newRole) {
+        // Busca o usuário pelo ID
+        UsersEntity user = repository.findById(id).orElseThrow(() -> new RuntimeException("Usuário não encontrado"));
+
+        // Altera a role do usuário
+        user.setRole(UsersRole.valueOf(newRole)); // Atualiza a role
+        repository.save(user);
+
+        // Redireciona de volta para a página de detalhes com uma mensagem de sucesso
+        return "redirect:/auth/admin/users/" + id + "/details?roleUpdated"; // Parâmetro de sucesso (opcional)
+    }
+    @PreAuthorize("hasRole('ADMIN')")
+    @PostMapping("/admin/users/{id}/update")
+    public String updateUser(@PathVariable Long id,
+                             @RequestParam String role,
+                             @RequestParam(required = false) Boolean enabled,
+                             Model model) {
+
+        // Valida se o "role" ou "status" não foi selecionado corretamente
+        if (role == null || role.isEmpty()) {
+            model.addAttribute("error", "A Role deve ser selecionada.");
+            return "redirect:/auth/admin/users/" + id + "/details-edit";
+        }
+
+        if (enabled == null) {
+            model.addAttribute("error", "O Status deve ser selecionado.");
+            return "redirect:/auth/admin/users/" + id + "/details-edit";
+        }
+
+        // Busca o usuário pelo ID
+        UsersEntity user = repository.findById(id).orElseThrow(() -> new RuntimeException("Usuário não encontrado"));
+
+        // Atualiza a role e o status do usuário
+        user.setRole(UsersRole.valueOf(role));  // Atualiza a role
+        user.setEnabled(enabled);                // Atualiza o status
+
+        // Salva as alterações no banco de dados
+        repository.save(user);
+
+        return "redirect:/auth/admin/users/" + id + "/details-edit?success=true"; // Redireciona após sucesso
+    }
+
+
+
+
+
 
 
 

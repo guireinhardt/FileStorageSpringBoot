@@ -28,6 +28,7 @@ public class KeywordService {
         displayMap.put("plantacao", "Plantação");
 
     }
+
     // Getters para expor os mapas, se quiser
     public Map<String, List<String>> getKeywordMap() {
         return keywordMap;

@@ -9,6 +9,9 @@
 <div class="container mt-5">
     <h1 class="mb-4">Administração de Usuários</h1>
 
+    <!-- Link para adicionar um novo usuário -->
+    <a href="/auth/register" class="btn btn-success mb-3">Adicionar Novo Usuário</a>
+
     <table class="table table-striped table-bordered">
         <thead class="table-dark">
         <tr>
@@ -26,15 +29,10 @@
             <td th:text="${user.role}"></td>
             <td th:text="${user.enabled} ? 'Ativo' : 'Desabilitado'"></td>
             <td>
-                <!-- Alterar Role -->
-                <form th:action="@{'/auth/admin/users/' + ${user.id} + '/change-role'}" method="post" style="display:inline;">
-                    <select name="newRole" class="form-select form-select-sm d-inline w-auto">
-                        <option value="ADMIN">ADMIN</option>
-                        <option value="USERS">USERS</option>
-                        <option value="PUBLICO">PUBLICO</option>
-                    </select>
-                    <button type="submit" class="btn btn-sm btn-primary">Alterar</button>
-                </form>
+                <!-- Link para editar o usuário -->
+                <!-- Link para detalhes do usuário -->
+                <a th:href="@{'/auth/admin/users/' + ${user.id} + '/details-edit'}" class="btn btn-sm btn-info">Editar</a>
+
 
                 <!-- Excluir -->
                 <form th:action="@{'/auth/admin/users/' + ${user.id} + '/delete'}" method="post" style="display:inline;" onsubmit="return confirm('Tem certeza que deseja excluir?');">
@@ -53,5 +51,11 @@
 
     <a href="/" class="btn btn-secondary">Voltar</a>
 </div>
+<div th:if="${error}">
+    <div class="alert alert-danger" role="alert">
+        <strong>Erro:</strong> <span th:text="${error}"></span>
+    </div>
+</div>
+
 </body>
 </html>

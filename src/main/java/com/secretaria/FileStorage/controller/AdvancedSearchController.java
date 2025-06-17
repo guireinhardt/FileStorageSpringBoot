@@ -3,6 +3,7 @@ package com.secretaria.FileStorage.controller;
 import com.secretaria.FileStorage.config.KeywordConfig;
 import com.secretaria.FileStorage.dto.FileResultDTO;
 import com.secretaria.FileStorage.service.*;
+import com.secretaria.FileStorage.utils.StringUtils;
 import com.secretaria.FileStorage.vo.FileVO;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.format.annotation.DateTimeFormat;
@@ -44,8 +45,10 @@ public class AdvancedSearchController {
     @GetMapping("/advanced/subkeywords")
     @ResponseBody
     public List<String> getSubkeywordsP(@RequestParam String keyword) {
-        return keywordService.getKeywordMap().getOrDefault(keyword, List.of());
+        String normalizedKeyword = StringUtils.normalize(keyword); // Normaliza a palavra-chave
+        return keywordService.getKeywordMap().getOrDefault(normalizedKeyword, List.of());
     }
+
     @GetMapping("")
     public String showForm(Model model) {
         preencherModelPadrao(model);
