@@ -3,6 +3,7 @@ package com.secretaria.FileStorage.controller;
 import com.secretaria.FileStorage.entity.*;
 import com.secretaria.FileStorage.infra.security.TokenService;
 import com.secretaria.FileStorage.repository.UsersRepository;
+import jakarta.servlet.http.HttpServletResponse;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -12,6 +13,7 @@ import org.springframework.http.ResponseCookie;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.authentication.AuthenticationManager;
+import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.AuthenticationException;
 import org.springframework.security.core.GrantedAuthority;
@@ -60,38 +62,54 @@ public class AuthenticationController {
     }
 
     @PostMapping("/login")
-    public ResponseEntity<LoginResponseDTO> login(@RequestBody AuthenticationDTO data) {
-        logger.debug("Iniciando o processo de login para o usuário: {}", data.login());
+    public ResponseEntity<Object> login(@RequestBody AuthenticationDTO data) {
+        try {
+            logger.debug("Iniciando o processo de login para o usuário: {}", data.login());
 
-        var usernamePassword = new UsernamePasswordAuthenticationToken(data.login(), data.password());
-        var auth = this.authenticationManager.authenticate(usernamePassword);
+            var usernamePassword = new UsernamePasswordAuthenticationToken(data.login(), data.password());
+            var auth = this.authenticationManager.authenticate(usernamePassword);
 
-        logger.debug("Usuário autenticado: {}", auth.getName());
+            logger.debug("Usuário autenticado: {}", auth.getName());
 
-        var user = (UsersEntity) auth.getPrincipal();
-        var token = tokenService.generateToken(user);
+            var user = (UsersEntity) auth.getPrincipal();
+            var token = tokenService.generateToken(user);
 
-        // Extrai a role
-        String role = user.getAuthorities().stream()
-                .findFirst()
-                .map(GrantedAuthority::getAuthority)
-                .orElse("ROLE_PUBLICO");
+            // Extrai a role
+            String role = user.getAuthorities().stream()
+                    .findFirst()
+                    .map(GrantedAuthority::getAuthority)
+                    .orElse("ROLE_PUBLICO");
 
-        logger.debug("Token gerado com sucesso: {}", token);
-        logger.debug("Role extraída: {}", role);
+            logger.debug("Token gerado com sucesso: {}", token);
+            logger.debug("Role extraída: {}", role);
 
-        ResponseCookie cookie = ResponseCookie.from("authToken", token)
-                .httpOnly(true)
-                .secure(false)
-                .path("/")
-                .maxAge(60 * 60) // 1 hora
-                .sameSite("Lax")
-                .build();
+            ResponseCookie cookie = ResponseCookie.from("authToken", token)
+                    .httpOnly(true)
+                    .secure(false)
+                    .path("/")
+                    .maxAge(60 * 60) // 1 hora
+                    .sameSite("Lax")
+                    .build();
 
-        return ResponseEntity.ok()
-                .header(HttpHeaders.SET_COOKIE, cookie.toString())
-                .body(new LoginResponseDTO(token, role));
+            // Retorna a resposta com o token e a role
+            return ResponseEntity.ok()
+                    .header(HttpHeaders.SET_COOKIE, cookie.toString())
+                    .body(new LoginResponseDTO(token, role));
+
+        } catch (BadCredentialsException e) {
+            logger.error("Falha no login: credenciais inválidas para o usuário: {}", data.login());
+            // Retorna um LoginErrorResponseDTO com a mensagem de erro
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                    .body(new LoginErrorResponseDTO("Credenciais inválidas. Por favor, verifique seu usuário e senha."));
+        } catch (Exception e) {
+            logger.error("Erro inesperado durante o login: {}", e.getMessage());
+            // Retorna um LoginErrorResponseDTO com a mensagem de erro genérica
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(new LoginErrorResponseDTO("Erro inesperado. Tente novamente."));
+        }
     }
+
+
 
 
     @PostMapping("/register")
@@ -124,7 +142,7 @@ public class AuthenticationController {
 
 
     @GetMapping("/logout")
-    public ResponseEntity<Void> logout() {
+    public ResponseEntity<Void> logout(HttpServletResponse response) {
         // Invalida o cookie JWT no cliente
         ResponseCookie cookie = ResponseCookie.from("authToken", "")
                 .httpOnly(true)
@@ -134,10 +152,16 @@ public class AuthenticationController {
                 .sameSite("Lax")
                 .build();
 
-        return ResponseEntity.status(HttpStatus.OK)
-                .header(HttpHeaders.SET_COOKIE, cookie.toString())
-                .build();
+        // Adiciona o cookie de logout à resposta
+        response.addHeader(HttpHeaders.SET_COOKIE, cookie.toString());
+
+        // Redireciona para a página de login (HTTP 302)
+        response.setStatus(HttpServletResponse.SC_FOUND);
+        response.setHeader("Location", "/auth/login");
+
+        return ResponseEntity.status(HttpStatus.FOUND).build(); // HTTP 302 (Found) para o redirecionamento
     }
+
 
     @GetMapping("/account")
     public String accountPage(@CookieValue("authToken") String token, Model model) {
