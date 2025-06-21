@@ -127,3 +127,17 @@ a {
     color: #4CAF50;
     text-decoration: none;
 }
+/* ... seu CSS atual ... */
+
+#error-message {
+    background-color: #330000; /* vermelho bem escuro */
+    border: 1px solid #cc4444; /* borda vermelho vivo */
+    color: #ff6666; /* texto vermelho claro */
+    padding: 10px;
+    border-radius: 6px;
+    margin-top: 10px;
+    font-weight: 600;
+    text-align: left;
+}
+
+

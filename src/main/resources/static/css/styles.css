@@ -19,33 +19,43 @@ body {
     display: flex;
     align-items: center;
     padding: 0.5rem 1rem;
-    color: #e6f2e6;
+    color: white;
+    justify-content: space-between; /* Espaça entre a logo e os itens */
+}
+
+/* Logo - Fica à esquerda */
+.navbar .navbar-logo {
+    display: flex;
+    align-items: center;
 }
 
 .navbar img {
-    height: 40px;
-    margin-right: 20px;
+    height: 40px; /* Tamanho da logo reduzido */
 }
 
-.navbar > div {
+/* Itens à direita */
+.navbar-right {
     display: flex;
-    gap: 1rem;
+    align-items: center;
+    gap: 1rem; /* Diminuindo o espaço entre os itens */
 }
 
-.navbar a {
-    color: #e6f2e6;
+/* Links da navbar */
+.navbar-right a {
+    color: white;
+    font-weight: bold;
     text-decoration: none;
-    font-weight: 500;
+    transition: color 0.3s ease;
 }
 
-.navbar a:hover {
-    text-decoration: underline;
+.navbar-right a:hover {
     color: #d4edda;
+    text-decoration: none;
+    font-weight:italic;
 }
 
-/* User menu */
+/* Menu de usuário */
 .user-menu {
-    margin-left: auto;
     position: relative;
 }
 
@@ -55,10 +65,10 @@ body {
 
 .user-icon img.profile-pic {
     border-radius: 50%;
-    width: 40px;
-    height: 40px;
+    width: 30px; /* Reduzindo o tamanho da imagem */
+    height: 30px;
     object-fit: cover;
-    border: 2px solid #e6f2e6;
+    border: 2px solid white;
 }
 
 /* Dropdown genérico */
@@ -77,7 +87,7 @@ body {
 
 .dropdown-content a {
     display: block;
-    padding: 8px 16px;
+    padding: 6px 12px; /* Reduzindo o padding */
     color: #1B5E20;
     text-decoration: none;
     font-weight: 500;
@@ -87,84 +97,179 @@ body {
     background-color: #f1f1f1;
 }
 
-/* Sidebar */
-.sidebar {
-    background-color: #1B5E20 !important;
-    min-height: 100vh;
-    width: 250px;
-}
-
-.sidebar .nav-link {
-    color: #fff !important;
-}
-
-.sidebar .nav-link:hover {
-    background-color: #145A1B;
-    border-radius: 4px;
-}
-
+/* Estilo de Pastas */
 /* Estilo de Pastas */
 .folder-grid {
     display: flex;
     flex-wrap: wrap;
-    gap: 20px;
-    margin-top: 20px;
+    gap: 10px; /* Menor espaçamento entre as pastas */
+    margin-top: 10px;
 }
 
 .folder {
     display: flex;
-        align-items: center;
-        justify-content: space-between;
-        padding: 8px 12px;
-        border: 1px solid #e0e0e0;
-        border-radius: 6px;
-        background-color: #fff;
-        max-width: 100%;
-        gap: 10px;
-        position: relative;
+    align-items: center; /* Alinha ícone e nome na mesma linha */
+    justify-content: flex-start; /* Alinha à esquerda */
+    padding: 6px 10px; /* Menor padding */
+    border: none; /* Remover a borda para uma aparência limpa */
+    border-radius: 8px; /* Bordas arredondadas */
+    background-color: #fff; /* Fundo branco */
+    height: auto; /* Altura reduzida das pastas */
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1); /* Sombra suave */
+    transition: transform 0.3s ease, background-color 0.3s ease; /* Transição suave */
+    cursor: pointer; /* Cursor de clique */
+    text-align: center;
 }
 
+/* Remover o estilo do link */
+.folder-link {
+    text-decoration: none; /* Remover sublinhado */
+    display: flex; /* Garante que o ícone e nome fiquem na mesma linha */
+    align-items: center; /* Alinha verticalmente */
+    gap: 6px; /* Espaço entre o ícone e o nome */
+    flex-wrap: wrap; /* Faz o texto da pasta se ajustar caso necessário */
+}
+
+/* Estilo para o nome da pasta */
+.folder-name {
+    font-size: 12px; /* Fonte menor */
+    color: #333; /* Cor do texto */
+    font-weight: bold;
+    display: block;
+    margin-top: 4px; /* Espaço entre o ícone e o nome */
+    word-wrap: break-word; /* Evita quebra de linha no texto */
+}
+
+/* Efeito hover nas pastas */
+.folder:hover {
+    transform: scale(1.05); /* Aumenta um pouco a pasta no hover */
+    background-color: #e0e0e0; /* Cor de fundo clara no hover */
+}
+
+/* Alteração da cor do nome da pasta no hover */
+.folder:hover .folder-name {
+    color: #FFB300; /* Altera a cor do nome no hover */
+}
+
+/* Ícone de pasta */
 .folder i.fa-folder {
-    font-size: 20px;
-    color: #333;
-    border: 1px solid #ccc;
-    padding: 2px;
-    border-radius: 4px; /* borda quadrada com leve arredondamento */
-    background: transparent;
-}
-/* Ícone da pasta sem fundo ovalado */
-.folder-icon {
-    font-size: 24px;
-        color: #4caf50; /* Verde */
-        background: none !important;
-        border: none !important;
-        padding: 0 !important;
-        border-radius: 0 !important;
+    font-size: 24px; /* Ícone menor */
+    color: #FFC107; /* Amarelo mais escuro */
+    background: none;
+    border-radius: 50%; /* Ícone arredondado */
+    padding: 6px; /* Ajustando o tamanho do padding */
+    transition: background-color 0.3s ease, color 0.3s ease; /* Transição suave */
 }
 
-.folder span {
-    max-width: 180px;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-    font-size: 14px;
+/* Hover no ícone de pasta */
+.folder i.fa-folder:hover {
+    color: white; /* Ícone branco ao passar o mouse */
+    background-color: #FFC107; /* Fundo amarelo no hover */
 }
-.folder i.fa-ellipsis-v {
-    cursor: pointer;
-    font-size: 14px;
-    color: #777;
+
+/* Ícone personalizado */
+.folder-icon {
+    font-size: 16px; /* Ajustando o tamanho do ícone */
+    color: #4caf50; /* Cor verde do ícone */
     background: none;
     border: none;
-    padding: 0;
-}
-.ellipsis-icon {
-    color: #666;
-        cursor: pointer;
-        padding: 6px;
-        border-radius: 4px;
+    padding: 6px;
+    border-radius: 4px; /* Retangular */
+    transition: color 0.3s ease, background-color 0.3s ease;
 }
 
-/* Garante que o menu de ações da pasta tenha aparência limpa */
+/* Hover sobre o ícone */
+.folder-icon:hover {
+    color: white; /* Ícone branco no hover */
+    background-color: #4caf50; /* Fundo verde no hover */
+}
+
+
+
+/* Hover dinâmico nos ícones (dentro do conteúdo) */
+
+/* Ícones de ação (Download, Visualizar, Renomear, Compartilhar) */
+.btn-download i {
+    color: #1976d2; /* Azul */
+    background: none;
+    padding: 6px; /* Reduzindo o tamanho do ícone */
+    border-radius: 4px; /* Retangular */
+    transition: color 0.3s ease, background-color 0.3s ease;
+    border: none; /* Removendo a borda */
+    outline: none; /* Removendo o contorno */
+    font-size: 16px; /* Reduzindo o tamanho do ícone */
+}
+
+.btn-download:hover i {
+    color: white; /* Ícone branco no hover */
+    background-color: #1976d2; /* Fundo azul no hover */
+}
+
+.btn-view i {
+    color: #388e3c; /* Verde */
+    background: none;
+    padding: 6px; /* Reduzindo o tamanho do ícone */
+    border-radius: 4px; /* Retangular */
+    transition: color 0.3s ease, background-color 0.3s ease;
+    border: none; /* Removendo a borda */
+    outline: none; /* Removendo o contorno */
+    font-size: 16px; /* Reduzindo o tamanho do ícone */
+}
+
+.btn-view:hover i {
+    color: white; /* Ícone branco no hover */
+    background-color: #388e3c; /* Fundo verde no hover */
+}
+
+.btn-rename i {
+    color: #f9a825; /* Amarelo */
+    background: none;
+    padding: 6px; /* Reduzindo o tamanho do ícone */
+    border-radius: 4px; /* Retangular */
+    transition: color 0.3s ease, background-color 0.3s ease;
+    border: none; /* Removendo a borda */
+    outline: none; /* Removendo o contorno */
+    font-size: 16px; /* Reduzindo o tamanho do ícone */
+}
+
+.btn-rename:hover i {
+    color: white; /* Ícone branco no hover */
+    background-color: #f9a825; /* Fundo amarelo no hover */
+}
+
+.btn-share i {
+    color: #d32f2f; /* Vermelho */
+    background: none;
+    padding: 6px; /* Reduzindo o tamanho do ícone */
+    border-radius: 4px; /* Retangular */
+    transition: color 0.3s ease, background-color 0.3s ease;
+    border: none; /* Removendo a borda */
+    outline: none; /* Removendo o contorno */
+    font-size: 16px; /* Reduzindo o tamanho do ícone */
+}
+
+.btn-share:hover i {
+    color: white; /* Ícone branco no hover */
+    background-color: #d32f2f; /* Fundo vermelho no hover */
+}
+
+/* Ícones de ações nas pastas (mover, baixar) */
+.ellipsis-icon {
+    color: #666;
+    cursor: pointer;
+    padding: 6px; /* Reduzindo o tamanho do ícone */
+    border-radius: 4px; /* Retangular */
+    transition: color 0.3s ease, background-color 0.3s ease;
+    outline: none; /* Removendo o contorno */
+    border: none; /* Removendo a borda */
+}
+
+.ellipsis-icon:hover {
+    color: white; /* Ícone branco no hover */
+    background-color: #666; /* Fundo cinza no hover */
+}
+
+/* Menu de ações da pasta */
 .folder-dropdown {
     display: none;
     position: absolute;
@@ -174,27 +279,18 @@ body {
     border: 1px solid #ccc;
     z-index: 100;
 }
-.folder-link {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    text-decoration: none;       /* Remove o sublinhado */
-    color: #333 !important;      /* Cor neutra para texto e ícones */
-    font-weight: 500;
-}
 
-.folder-link:hover {
+.folder-dropdown a {
+    color: #333;
     text-decoration: none;
-    color: #000 !important;      /* Cor no hover */
+    padding: 6px 12px; /* Reduzindo o padding */
+    display: block;
 }
 
-.folder-link i,
-.folder-link .folder-name {
-    color: inherit !important;   /* Herda a cor do link */
+.folder-dropdown a:hover {
+    background-color: #f1f1f1;
+    color: #1b5e20; /* Tom mais claro de verde no hover */
 }
-
-
-
 
 /* Tabela */
 table {
@@ -204,7 +300,7 @@ table {
 }
 
 table th, table td {
-    padding: 12px;
+    padding: 10px;
     border: 1px solid #ccc;
     text-align: left;
 }
@@ -215,7 +311,7 @@ table th {
 
 /* Botões personalizados */
 button, .btn {
-    padding: 10px 20px;
+    padding: 8px 16px; /* Reduzindo o tamanho do botão */
     border-radius: 4px;
     font-size: 14px;
     cursor: pointer;
@@ -230,6 +326,8 @@ button, .btn {
 .btn-primary:hover {
     background-color: #e6b100;
 }
+
+/* Botão com a classe .btn-outline-secondary */
 .btn-outline-secondary {
     display: inline-flex;
     align-items: center;
@@ -241,69 +339,44 @@ button, .btn {
 
     color: #424242;
     background-color: transparent;
-    border: 1px solid #BDBDBD;
+    border: none; /* Removendo a borda */
     border-radius: 4px;
     text-decoration: none;
 
     transition: background-color 0.2s ease, color 0.2s ease, border-color 0.2s ease;
 }
 
-/* ícone dentro do botão */
-.btn-outline-secondary i {
-    color: inherit;  /* herda a cor do botão */
-}
-
-/* Hover */
+/* Removendo borda cinza no hover */
 .btn-outline-secondary:hover {
-    background-color: #FFF8E1;
-    color: #2E7D32;
-    border-color: #A1887F;
+    background-color: transparent; /* Sem fundo */
+    color: #2E7D32; /* Cor dinâmica para cada ícone */
+    border: none; /* Sem borda */
+    outline: none; /* Removendo o contorno */
 }
 
-/* Desativa herança de azul em links */
-.btn-outline-secondary:visited,
-.btn-outline-secondary:active {
-    color: #424242;
-}
+/* Botão Compartilhar verde */
+.btn-share {
 
-
-
-/* Base para todos os botões de ação */
-.btn-action {
-    display: inline-block;
-    padding: 8px;
-    margin: 0 5px;
-    border-radius: 50%;
-    font-size: 16px;
-    text-decoration: none;
-    color: #fff;
+    border: none;
+    color: white;
     transition: background-color 0.3s ease;
 }
-.btn-action i {}
-    color: #fff;
 
-
-
-/* Compartilhar */
-.btn-share {
-    background-color: #28a745;
-}
 .btn-share:hover {
     background-color: #218838;
 }
-
 
 /* Botão Flutuante */
 .btn-flutuante {
     position: fixed;
     bottom: 20px;
     right: 20px;
-    width: 60px;
-    height: 60px;
+    width: 50px; /* Reduzindo o tamanho do botão */
+    height: 50px;
     border-radius: 50%;
     background-color: #007bff;
     color: white;
-    font-size: 24px;
+    font-size: 20px;
     display: flex;
     justify-content: center;
     align-items: center;
@@ -315,8 +388,10 @@ button, .btn {
 .btn-flutuante:hover {
     transform: scale(1.1);
 }
-.btn a{
-color: #121212 }
+
+.btn a {
+    color: #121212;
+}
 
 /* Modal */
 /* Modal - compatível com Bootstrap */
@@ -329,7 +404,7 @@ color: #121212 }
 }
 
 .modal-header {
-    background-color: #198754; /* verde bootstrap */
+    background-color: #198754;
     color: white;
     border-top-left-radius: 8px;
     border-top-right-radius: 8px;

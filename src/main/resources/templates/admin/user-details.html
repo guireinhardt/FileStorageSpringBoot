@@ -2,68 +2,75 @@
 <html xmlns:th="http://www.thymeleaf.org">
 <head>
   <meta charset="UTF-8">
-  <title>Detalhes e Edição do Usuário</title>
+  <title>Detalhes do Usuário</title>
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link rel="stylesheet" href="/css/userInfo.css">
 </head>
-<style>
-  .card-body-details{
-  background-color: #006400;
-  color: white;
-  border: none;
-  }
-
-</style>
 <body>
-<div class="container mt-5">
-  <h1 class="mb-4 text-center">Detalhes e Edição do Usuário</h1>
 
-  <!-- Exibe os detalhes do usuário -->
-  <div class="card mb-4">
-    <div class="card-body-details">
-      <h5 class="card-title">Informações do Usuário</h5>
-      <p><strong>Nome:</strong> <span th:text="${user.nome}"></span></p>
-      <p><strong>Username:</strong> <span th:text="${user.username}"></span></p>
-      <p><strong>Role:</strong> <span th:text="${user.role}"></span></p>
-      <p><strong>Status:</strong> <span th:text="${user.enabled} ? 'Ativo' : 'Desabilitado'"></span></p>
+<!-- Botão de voltar fixo no canto superior esquerdo -->
+<a href="/auth/admin/users" class="btn back-button">← Voltar</a>
+
+<div class="container mt-5 user-container">
+
+  <!-- Título da Página -->
+  <h2 class="page-title mb-4 text-center">Detalhes do Usuário</h2>
+
+  <!-- Primeira linha: Perfil e Informações lado a lado -->
+  <div class="row mb-4 justify-content-center">
+    <!-- Card de perfil -->
+    <div class="col-md-5 mb-4 mb-md-0">
+      <div class="card profile-card text-center p-4 h-100">
+        <div class="profile-photo mb-3 mx-auto">
+          <img src="/images/user.jpg" alt="Foto do Usuário" class="img-fluid rounded-circle shadow">
+        </div>
+        <h4 class="mb-0" th:text="${user.nome}">Nome do Usuário</h4>
+        <small class="text-muted" th:text="${user.username}">Username</small>
+      </div>
+    </div>
+
+    <!-- Card de informações -->
+    <div class="col-md-5">
+      <div class="card info-card p-4 h-100">
+        <h5 class="card-title mb-3">Informações do Usuário</h5>
+        <p><strong>Role:</strong> <span th:text="${user.role}"></span></p>
+        <p><strong>Status:</strong> <span th:text="${user.enabled} ? 'Ativo' : 'Desabilitado'"></span></p>
+      </div>
     </div>
   </div>
 
-  <!-- Formulário para editar a role e o status -->
-  <div class="card">
-    <div class="card-body">
-      <h5 class="card-title">Alterar Role e Status</h5>
-      <form th:action="@{'/auth/admin/users/' + ${user.id} + '/update'}" method="post">
-        <div class="mb-3">
-          <label for="role" class="form-label">Role</label>
-          <select name="role" id="role" class="form-select" required>
-            <!-- Opção "Selecione uma Role" -->
-            <option value="" disabled selected>Selecione uma Role</option>
-            <!-- Opções de Role -->
-            <option th:each="role : ${roles}" th:value="${role}" th:text="${role}" th:selected="${role == user.role}"></option>
-          </select>
-        </div>
+  <!-- Segunda linha: Formulário embaixo -->
+  <div class="row justify-content-center">
+    <div class="col-md-10">
+      <div class="card form-card p-4 mb-4">
+        <h5 class="card-title mb-3">Alterar Role e Status</h5>
+        <form th:action="@{'/auth/admin/users/' + ${user.id} + '/update'}" method="post">
+          <div class="mb-3">
+            <label for="role" class="form-label">Role</label>
+            <select name="role" id="role" class="form-select" required>
+              <option value="" disabled selected>Selecione uma Role</option>
+              <option th:each="role : ${roles}" th:value="${role}" th:text="${role}" th:selected="${role == user.role}"></option>
+            </select>
+          </div>
 
-        <div class="mb-3">
-          <label for="enabled" class="form-label">Status</label>
-          <select name="enabled" id="enabled" class="form-select" required>
-            <!-- Opção "Selecione um Status" -->
-            <option value="" disabled selected>Selecione um Status</option>
-            <!-- Opções de Status -->
-            <option value="true" th:selected="${user.enabled}">Ativo</option>
-            <option value="false" th:selected="${!user.enabled}">Desabilitado</option>
-          </select>
-        </div>
+          <div class="mb-3">
+            <label for="enabled" class="form-label">Status</label>
+            <select name="enabled" id="enabled" class="form-select" required>
+              <option value="" disabled selected>Selecione um Status</option>
+              <option value="true" th:selected="${user.enabled}">Ativo</option>
+              <option value="false" th:selected="${!user.enabled}">Desabilitado</option>
+            </select>
+          </div>
 
-        <button type="submit" class="btn btn-success">Salvar Alterações</button>
-      </form>
+          <button type="submit" class="btn btn-primary w-100">Salvar Alterações</button>
+        </form>
+      </div>
     </div>
   </div>
 
-  <div class="mt-3">
-    <a href="/auth/admin/users" class="btn btn-secondary">Voltar para a Administração</a>
-  </div>
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+
 </body>
 </html>
