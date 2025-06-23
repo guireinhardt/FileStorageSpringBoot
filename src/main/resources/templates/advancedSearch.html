@@ -162,7 +162,6 @@
             </div>
         </div>
 
-        <!-- Pastas -->
         <div class="mt-4">
             <label class="form-label">Pastas</label>
             <div class="border rounded p-3 bg-white" style="max-height: 300px; overflow-y: auto;">
@@ -177,16 +176,18 @@
                     <li th:each="folder : ${folders}">
                         <span class="toggle me-1" onclick="toggleSubfolders(this)">&#x25B6;</span>
                         <label>
-                            <input type="checkbox" name="folders" class="folder-checkbox" th:value="${folder.path}" th:checked="${#lists.contains(selectedFolders ?: {}, folder.path)}" />
+                            <input type="checkbox" name="folders" class="folder-checkbox"
+                                   th:value="${folder.path}"
+                                   th:checked="${#lists.contains(selectedFolders ?: {}, folder.path)}" />
                             <span th:text="${folder.name}"></span>
                         </label>
                         <ul class="folder-children" style="display:none;" th:if="${folder.subFolders}" th:insert="~{this :: renderSubFolders(${folder.subFolders}, ${selectedFolders})}"></ul>
                     </li>
                 </ul>
-
-
             </div>
         </div>
+
+
 
         <div class="mt-4">
             <button type="submit" class="btn btn-primary w-100">Buscar</button>

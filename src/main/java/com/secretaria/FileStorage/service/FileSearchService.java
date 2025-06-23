@@ -29,6 +29,7 @@ public class FileSearchService {
     private final String fileStorageLocation;
 
 
+
     public FileSearchService(FileStorageConfig fileStorageConfig) {
         this.fileStorageLocation = fileStorageConfig.getUploadDir();
     }
@@ -282,12 +283,36 @@ public class FileSearchService {
         return result;
     }
 
-    public List<FileResultDTO> searchFilesWithinRoot(String query, String keyword, List<String> subkeywords, Path root) throws IOException {
+    public List<FileResultDTO> searchFilesWithinRoot(
+            String query,
+            String keyword,
+            List<String> subkeywords,
+            String institute,
+            String city,
+            LocalDate startDate,
+            LocalDate endDate,
+            Path root) throws IOException {
+
+        // Normalizando e preparando os parâmetros de pesquisa
+        List<String> queryTerms = (query == null || query.isBlank()) ?
+                Collections.emptyList() :
+                Arrays.stream(StringUtils.normalize(query).split("\\s+"))
+                        .filter(term -> !term.isBlank())
+                        .collect(Collectors.toList());
+
+        String normalizedKeyword = StringUtils.normalize(keyword);
+        List<String> normalizedSubkeywords = subkeywords != null
+                ? subkeywords.stream().map(StringUtils::normalize).collect(Collectors.toList())
+                : Collections.emptyList();
+
+        String normalizedInstitute = StringUtils.normalize(institute);
+        String normalizedCity = StringUtils.normalize(city);
+
         try (Stream<Path> paths = Files.walk(root)) {
             return paths
                     .filter(Files::isRegularFile)
                     .map(path -> {
-                        // Aqui pode buscar a data de criação, se quiser
+                        // Aqui pode buscar a data de criação do arquivo
                         LocalDate creationDate = null;
                         try {
                             creationDate = Files.getLastModifiedTime(path)
@@ -300,20 +325,61 @@ public class FileSearchService {
                         return new FileResultDTO(path.getFileName().toString(), path.toString(), creationDate);
                     })
                     .filter(file -> {
-                        String lowerName = file.getName().toLowerCase();
+                        // Normalizar o nome do arquivo para remover acentos e colocar tudo em minúsculo
+                        String lowerName = StringUtils.normalize(file.getName());  // Corrigido
 
-                        boolean matchesQuery = (query == null || query.isBlank()) || lowerName.contains(query.toLowerCase());
-                        boolean matchesKeyword = (keyword == null || keyword.isBlank()) || lowerName.contains(keyword.toLowerCase());
+
+                        // Filtro de texto livre (query)
+                        boolean matchesQuery = (query == null || query.isBlank()) || queryTerms.stream().allMatch(term -> lowerName.contains(term));
+
+                        // Filtro de palavra-chave (keyword)
+                        boolean matchesKeyword = (keyword == null || keyword.isBlank()) || lowerName.contains(normalizedKeyword);
+
+                        // Filtro de subpalavras
                         boolean matchesSubkeywords = (subkeywords == null || subkeywords.isEmpty()) ||
-                                subkeywords.stream()
-                                        .map(String::toLowerCase)
+                                normalizedSubkeywords.stream()
                                         .anyMatch(lowerName::contains);
 
-                        return matchesQuery && matchesKeyword && matchesSubkeywords;
+                        // Filtro de instituto
+                        boolean matchesInstitute = (institute == null || institute.isBlank()) || lowerName.contains(normalizedInstitute);
+
+                        // Filtro de cidade
+                        boolean matchesCity = (city == null || city.isBlank()) || lowerName.contains(normalizedCity);
+
+                        // Filtro de data (startDate e endDate) no começo do nome do arquivo
+                        boolean matchesDate = true;
+                        if (startDate != null || endDate != null) {
+                            try {
+                                String fileNameOriginal = file.getName().toString();
+                                String prefix = fileNameOriginal.replaceAll("[^0-9]", "");
+                                LocalDate fileDate = null;
+
+                                if (prefix.length() >= 8) {
+                                    fileDate = LocalDate.parse(prefix.substring(0, 8), DateTimeFormatter.ofPattern("yyyyMMdd"));
+                                } else if (prefix.length() >= 6) {
+                                    fileDate = LocalDate.parse(prefix.substring(0, 6), DateTimeFormatter.ofPattern("yyMMdd"));
+                                } else {
+                                    matchesDate = false;
+                                }
+
+                                if (matchesDate && ((startDate != null && fileDate.isBefore(startDate)) ||
+                                        (endDate != null && fileDate.isAfter(endDate)))) {
+                                    matchesDate = false;
+                                }
+
+                            } catch (Exception e) {
+                                matchesDate = false;
+                            }
+                        }
+
+                        // Retorna true se o arquivo atender a todos os filtros
+                        return matchesQuery && matchesKeyword && matchesSubkeywords && matchesInstitute && matchesCity && matchesDate;
                     })
                     .collect(Collectors.toList());
         }
     }
+
+
 }
 
 

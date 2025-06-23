@@ -17,9 +17,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.time.LocalDate;
-import java.util.Collections;
-import java.util.List;
-import java.util.Set;
+import java.util.*;
 import java.util.stream.Collectors;
 
 @Controller
@@ -51,8 +49,10 @@ public class AdvancedSearchController {
 
     @GetMapping("")
     public String showForm(Model model) {
+        // Preenche o modelo com dados comuns
         preencherModelPadrao(model);
 
+        // Passa dados para o modelo para serem usados na view
         model.addAttribute("query", "");
         model.addAttribute("selectedCity", "");
         model.addAttribute("selectedInstitute", "");
@@ -61,16 +61,13 @@ public class AdvancedSearchController {
         model.addAttribute("files", null);
         model.addAttribute("foldersSet", Collections.emptySet());
 
-        // Adiciona as palavras-chave
+        // Passa as palavras-chave e subpalavras-chave para a view
         model.addAttribute("displayMap", keywordService.getDisplayMap());
         model.addAttribute("keyword", ""); // valor inicial do select
+        model.addAttribute("selectedSubkeywords", List.of()); // Inicialmente nenhuma subpalavra selecionada
 
-        // Adiciona subpalavras selecionadas como vazio no carregamento inicial
-        model.addAttribute("selectedSubkeywords", List.of());
-
-        return "advancedSearch";
+        return "advancedSearch"; // Ou o nome do template que você está usando
     }
-
 
 
     @PostMapping("")
@@ -80,50 +77,61 @@ public class AdvancedSearchController {
             @RequestParam(required = false, name = "folders") List<String> selectedFolders,
             @RequestParam(required = false) String institute,
             @RequestParam(required = false) String keyword,
-            @RequestParam(required = false) List<String> subkeywords, // ADICIONAR AQUI
+            @RequestParam(required = false) List<String> subkeywords, // Subpalavras-chave
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate startDate,
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate endDate,
             Model model) throws IOException {
 
-        List<FileResultDTO> files;
+        // Verifica se há filtros aplicados
+        boolean hasFilters = (query != null && !query.isBlank())
+                || (keyword != null && !keyword.isBlank())
+                || (subkeywords != null && !subkeywords.isEmpty())
+                || (institute != null && !institute.isBlank())
+                || (city != null && !city.isBlank())
+                || startDate != null
+                || endDate != null;
 
-        boolean hasFolders = selectedFolders != null && !selectedFolders.isEmpty();
+        List<FileResultDTO> results = new ArrayList<>();
 
-        if (hasFolders) {
-            // Busca restrita às pastas selecionadas
-            files = fileSearchService.searchFilesByFolders(query, city, selectedFolders);
-        } else {
-            // Busca global com todos os filtros (agora com subkeywords)
-            files = fileSearchService.searchFiles(query, keyword, subkeywords, institute, city, startDate, endDate);
+        // Se houver pastas selecionadas, carrega os arquivos dentro delas, independente da pesquisa
+        if (selectedFolders != null && !selectedFolders.isEmpty()) {
+            results = fileSearchService.searchFilesByFolders(null, city, selectedFolders);
+        } else if (hasFilters) {
+            results = fileSearchService.searchFiles(query, keyword, subkeywords, institute, city, startDate, endDate);
         }
 
-        // Monta o conjunto de pastas para usar na view
-        Set<String> foldersSet = files.stream()
-                .filter(f -> {
-                    Path p = Paths.get(f.getFullPath());
-                    return Files.exists(p) && Files.isDirectory(p);
-                })
-                .map(FileResultDTO::getFullPath)
-                .collect(Collectors.toSet());
+        // Adiciona palavras-chave e subpalavras-chave no modelo
+        List<String> keywords = new ArrayList<>(keywordService.getDisplayMap().keySet());
+        Map<String, List<String>> subkeywordsMap = keywordService.getKeywordMap();
 
-        preencherModelPadrao(model);
+        model.addAttribute("folders", folderService.getFolderTree());  // Certifique-se de que as pastas estão carregadas após a busca
 
-        model.addAttribute("query", query);
+        model.addAttribute("files", results);
+        model.addAttribute("hasFilters", hasFilters);
+
+        // Passa as palavras-chave, subpalavras-chave e dados de filtro para o modelo
+        model.addAttribute("keywords", keywords);
+        model.addAttribute("displayMap", keywordService.getDisplayMap());
+        model.addAttribute("selectedKeyword", keyword);
+        model.addAttribute("subkeywordsMap", subkeywordsMap);
+        model.addAttribute("selectedSubkeywords", subkeywords != null ? subkeywords : new ArrayList<>());
+
+        // Passa cidades e institutos
+        model.addAttribute("cities", cityService.getAllCities());
         model.addAttribute("selectedCity", city);
+
+        model.addAttribute("institutes", instituteService.getAllInstitutes());
         model.addAttribute("selectedInstitute", institute);
-        model.addAttribute("selectedDate", startDate);
+
+        // Passa as datas
+        model.addAttribute("startDate", startDate);
+        model.addAttribute("endDate", endDate);
+
+        // Passa as pastas selecionadas para manter o estado delas
         model.addAttribute("selectedFolders", selectedFolders);
-        model.addAttribute("files", files);
-        model.addAttribute("foldersSet", foldersSet);
 
-        model.addAttribute("keywords", keywordConfig.getKeywordList());
-        model.addAttribute("keyword", keyword);
-        model.addAttribute("selectedSubkeywords", subkeywords); // Adicione isso para manter a seleção no form
-
-        return "advancedSearch";
+        return "advancedSearch"; // Ou o nome do template que você está usando
     }
-
-
 
     private void preencherModelPadrao(Model model) {
         model.addAttribute("cities", cityService.getAllCities());

@@ -8,9 +8,11 @@
 <body class="bg-light">
 
 <!-- Navbar -->
+<!-- Navbar -->
 <nav class="navbar navbar-expand-lg navbar-dark bg-success">
     <div class="container-fluid">
-        <a class="navbar-brand" href="#">Sistema de Arquivos</a>
+        <!-- Atualizando o link para a página inicial -->
+        <a class="navbar-brand" href="/public/index">Sistema de Arquivos</a>
         <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
             <span class="navbar-toggler-icon"></span>
         </button>
@@ -20,6 +22,7 @@
                     <a class="nav-link active" th:href="@{/advanced-public}">🔎 Busca Avançada</a>
                 </li>
                 <li class="nav-item">
+                    <!-- O link já está configurado corretamente para redirecionar à página de arquivos -->
                     <a class="nav-link" th:href="@{/public/index}">📁 Arquivos Finalizados</a>
                 </li>
             </ul>
@@ -27,42 +30,71 @@
     </div>
 </nav>
 
+
 <div class="container my-4">
     <h2 class="mb-4">Busca Avançada Pública</h2>
 
     <form method="post" th:action="@{/advanced-public}">
-        <div class="mb-3">
-            <label for="query" class="form-label">Pesquisa (texto livre)</label>
-            <input type="text" id="query" name="query" class="form-control" th:value="${query}" placeholder="Digite texto para busca..." />
-        </div>
-
-        <div class="mb-3">
-            <label for="keyword" class="form-label">Palavra-chave</label>
-            <select id="keyword" name="keyword" class="form-select" onchange="updateSubkeywords()">
-                <option value="">-- Selecione --</option>
-                <th:block th:each="key : ${keywords}">
-                    <option th:value="${key}" th:text="${displayMap.get(key)}" th:selected="${key == selectedKeyword}"></option>
-                </th:block>
-            </select>
-        </div>
-
-        <div class="mb-3" id="subkeywords-container">
-            <label class="form-label">Subpalavras-chave</label>
-            <div id="subkeywords-list" class="form-check">
-                <th:block th:if="${selectedKeyword != null and selectedKeyword != '' and subkeywordsMap.containsKey(selectedKeyword)}">
-                    <th:block th:each="subkey : ${subkeywordsMap.get(selectedKeyword)}">
-                        <div class="form-check">
-                            <input class="form-check-input" type="checkbox"
-                                   th:id="${subkey}" th:name="subkeywords"
-                                   th:value="${subkey}"
-                                   th:checked="${selectedSubkeywords != null and selectedSubkeywords.contains(subkey)}" />
-                            <label class="form-check-label" th:for="${subkey}" th:text="${subkey}"></label>
-                        </div>
+        <div class="row mb-3">
+            <div class="col-md-4">
+                <label for="query" class="form-label">Pesquisa (texto livre)</label>
+                <input type="text" id="query" name="query" class="form-control" th:value="${query}" placeholder="Digite texto para busca..." />
+            </div>
+            <div class="col-md-4">
+                <label for="keyword" class="form-label">Palavra-chave</label>
+                <select id="keyword" name="keyword" class="form-select" onchange="updateSubkeywords()">
+                    <option value="">-- Selecione --</option>
+                    <th:block th:each="key : ${keywords}">
+                        <option th:value="${key}" th:text="${displayMap.get(key)}" th:selected="${key == selectedKeyword}"></option>
                     </th:block>
-                </th:block>
+                </select>
+            </div>
+            <div class="col-md-4">
+                <label class="form-label">Subpalavras-chave</label>
+                <div id="subkeywords-list" class="form-check">
+                    <th:block th:if="${selectedKeyword != null and selectedKeyword != '' and subkeywordsMap.containsKey(selectedKeyword)}">
+                        <th:block th:each="subkey : ${subkeywordsMap.get(selectedKeyword)}">
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox"
+                                       th:id="${subkey}" th:name="subkeywords"
+                                       th:value="${subkey}"
+                                       th:checked="${selectedSubkeywords != null and selectedSubkeywords.contains(subkey)}" />
+                                <label class="form-check-label" th:for="${subkey}" th:text="${subkey}"></label>
+                            </div>
+                        </th:block>
+                    </th:block>
+                </div>
             </div>
         </div>
 
+        <div class="row mb-3">
+            <div class="col-md-4">
+                <label for="institute" class="form-label">Instituto</label>
+                <select id="institute" name="institute" class="form-select">
+                    <option value="">-- Selecione --</option>
+                    <th:block th:each="institute : ${institutes}">
+                        <option th:value="${institute}" th:text="${institute}" th:selected="${institute == selectedInstitute}"></option>
+                    </th:block>
+                </select>
+            </div>
+            <div class="col-md-4">
+                <label for="city" class="form-label">Cidade</label>
+                <select id="city" name="city" class="form-select">
+                    <option value="">-- Selecione --</option>
+                    <th:block th:each="city : ${cities}">
+                        <option th:value="${city}" th:text="${city}" th:selected="${city == selectedCity}"></option>
+                    </th:block>
+                </select>
+            </div>
+            <div class="col-md-2">
+                <label for="startDate" class="form-label">Data de Início</label>
+                <input type="date" id="startDate" name="startDate" class="form-control" th:value="${startDate}" />
+            </div>
+            <div class="col-md-2">
+                <label for="endDate" class="form-label">Data de Fim</label>
+                <input type="date" id="endDate" name="endDate" class="form-control" th:value="${endDate}" />
+            </div>
+        </div>
 
         <button type="submit" class="btn btn-primary">Buscar</button>
     </form>
@@ -91,23 +123,18 @@
 
                     <a class="btn btn-sm btn-outline-success"
                        th:href="@{/download-public(path=${file.publicPath})}">⬇ Baixar</a>
-
                 </td>
             </tr>
             </tbody>
         </table>
-
     </div>
 </div>
 
 <!-- Scripts -->
-<!-- Primeiro define selectedSubkeywords -->
-
 <script th:inline="javascript">
     const selectedSubkeywords = /*[[${selectedSubkeywords}]]*/ [];
 </script>
 
-<!-- Depois vem o script que usa essa variável -->
 <script>
     function updateSubkeywords() {
         const keyword = document.getElementById("keyword").value;
@@ -149,8 +176,6 @@
         }
     });
 </script>
-
-
 
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 </body>

@@ -222,7 +222,7 @@ body {
 }
 
 .btn-rename i {
-    color: #f9a825; /* Amarelo */
+    color: #b0b0b0; /* cinza */
     background: none;
     padding: 6px; /* Reduzindo o tamanho do ícone */
     border-radius: 4px; /* Retangular */
@@ -234,7 +234,7 @@ body {
 
 .btn-rename:hover i {
     color: white; /* Ícone branco no hover */
-    background-color: #f9a825; /* Fundo amarelo no hover */
+    background-color: #a9a9a9; /* Fundo amarelo no hover */
 }
 
 .btn-share i {

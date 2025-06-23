@@ -2,10 +2,7 @@ package com.secretaria.FileStorage.controller.publico;
 
 import com.secretaria.FileStorage.config.KeywordConfig;
 import com.secretaria.FileStorage.dto.FileResultDTO;
-import com.secretaria.FileStorage.service.FileListService;
-import com.secretaria.FileStorage.service.FileSearchService;
-import com.secretaria.FileStorage.service.FolderService;
-import com.secretaria.FileStorage.service.KeywordService;
+import com.secretaria.FileStorage.service.*;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.io.Resource;
 import org.springframework.core.io.UrlResource;
@@ -24,6 +21,7 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.time.LocalDate;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
@@ -46,6 +44,12 @@ public class PublicAdvancedSearchController {
 
     @Autowired
     private FileListService fileListService;
+
+    @Autowired
+    private InstituteService instituteService;
+
+    @Autowired
+    private CityService cityService;
 
 
     @GetMapping("/advanced-public")
@@ -77,11 +81,29 @@ public class PublicAdvancedSearchController {
             @RequestParam(required = false) String query,
             @RequestParam(required = false) String keyword,
             @RequestParam(required = false, name = "subkeywords") List<String> selectedSubkeywords,
+            @RequestParam(required = false) String institute,
+            @RequestParam(required = false) String city,
+            @RequestParam(required = false) LocalDate startDate,
+            @RequestParam(required = false) LocalDate endDate,
             Model model) throws IOException {
 
         Path publicRoot = Paths.get(fileListService.getRootLocation().toString(), "02.FINALIZADOS");
 
-        List<FileResultDTO> files = fileSearchService.searchFilesWithinRoot(query, keyword, selectedSubkeywords, publicRoot);
+        // Chama o método do serviço com os parâmetros adicionais
+        List<FileResultDTO> files = fileSearchService.searchFilesWithinRoot(
+                query,
+                keyword,
+                selectedSubkeywords,
+                institute,   // Passa o instituto
+                city,         // Passa a cidade
+                startDate,    // Passa a data de início
+                endDate,      // Passa a data de fim
+                publicRoot
+        );
+
+        // Passa as listas de institutos e cidades para o modelo
+        model.addAttribute("institutes", instituteService.getAllInstitutes());
+        model.addAttribute("cities", cityService.getAllCities());
 
         Set<String> foldersSet = files.stream()
                 .map(FileResultDTO::getFullPath)
@@ -102,6 +124,8 @@ public class PublicAdvancedSearchController {
 
         return "public/public-search";
     }
+
+
     @GetMapping("/subkeywords")
     @ResponseBody
     public List<String> getSubkeywords(@RequestParam String keyword) {
