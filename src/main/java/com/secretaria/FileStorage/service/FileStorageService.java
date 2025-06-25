@@ -2,10 +2,12 @@ package com.secretaria.FileStorage.service;
 
 import java.io.File;
 import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
-import java.nio.file.StandardCopyOption;
+import java.nio.file.*;
+import java.nio.file.attribute.BasicFileAttributes;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import com.secretaria.FileStorage.config.FileStorageConfig;
 import com.secretaria.FileStorage.exception.FileStorageException;
@@ -199,5 +201,130 @@ public class FileStorageService {
         // Após mover tudo, deleta a original
         deleteDirectoryRecursively(sourceFolder);
     }
+    private Path getTrashFolder() {
+        return fileStorageLocation.resolve("lixeira").normalize();  // Local da lixeira
+    }
+
+    public void restoreFromTrash(String filePath) throws IOException {
+
+        Path trashFile = getTrashFolder().resolve(filePath);
+        Path restoredFile = fileStorageLocation.resolve(filePath);
+
+        if (!Files.exists(trashFile)) {
+            throw new FileStorageNotFoundException("Arquivo não encontrado na lixeira: " + filePath);
+        }
+
+        Files.createDirectories(restoredFile.getParent());
+        Files.move(trashFile, restoredFile, StandardCopyOption.REPLACE_EXISTING);
+    }
+    // Método para obter pastas na lixeira
+    public List<String> getFoldersInTrash() throws IOException {
+        Path trashDir = fileStorageLocation.resolve("lixeira"); // Supondo que a lixeira esteja no diretório 'lixeira'
+        return Files.walk(trashDir)
+                .filter(Files::isDirectory)  // Filtra apenas pastas, ignorando arquivos
+                .filter(path -> !path.equals(trashDir))  // Ignora o diretório raiz da lixeira
+                .map(path -> trashDir.relativize(path).toString())  // Retorna o caminho relativo da pasta
+                .collect(Collectors.toList());
+    }
+
+    public void restoreFolderFromTrash(String folderPath) throws IOException {
+        Path trashFolder = getTrashFolder().resolve(folderPath);
+        Path restoredFolder = fileStorageLocation.resolve(folderPath);
+
+        if (!Files.exists(trashFolder)) {
+            throw new FileStorageNotFoundException("Pasta não encontrada na lixeira: " + folderPath);
+        }
+
+        Files.createDirectories(restoredFolder);
+        Files.walk(trashFolder)
+                .sorted((a, b) -> b.compareTo(a)) // Inverte a ordem para restaurar arquivos antes das pastas
+                .forEach(source -> {
+                    try {
+                        Path destination = restoredFolder.resolve(trashFolder.relativize(source));
+                        if (Files.isDirectory(source)) {
+                            Files.createDirectories(destination);
+                        } else {
+                            Files.copy(source, destination, StandardCopyOption.REPLACE_EXISTING);
+                        }
+                    } catch (IOException e) {
+                        throw new RuntimeException("Erro ao restaurar da lixeira: " + e.getMessage());
+                    }
+                });
+
+        deleteDirectoryRecursively(trashFolder);  // Exclui a pasta original da lixeira
+    }
+    public List<String> getFilesInTrash() throws IOException {
+        Path trashFolder = getTrashFolder(); // Obtém o caminho da lixeira
+        List<String> filesInTrash = new ArrayList<>();
+
+        // Verifica se a lixeira existe e se não está vazia
+        if (Files.exists(trashFolder)) {
+            try (Stream<Path> paths = Files.walk(trashFolder)) {
+                paths.filter(Files::isRegularFile)  // Filtra apenas os arquivos
+                        .forEach(file -> filesInTrash.add(trashFolder.relativize(file).toString())); // Adiciona os arquivos encontrados à lista
+            }
+        }
+        return filesInTrash;
+    }
+    public void restoreFileFromTrash(String fileName) throws IOException {
+        // Caminho do arquivo na lixeira
+        Path trashFilePath = fileStorageLocation.resolve("lixeira").resolve(fileName);
+
+        // Verifica se o arquivo existe na lixeira
+        if (Files.notExists(trashFilePath)) {
+            throw new FileStorageNotFoundException("Arquivo não encontrado na lixeira: " + fileName);
+        }
+
+        // Caminho original onde o arquivo deve ser restaurado
+        Path originalFilePath = fileStorageLocation.resolve(fileName);
+
+        // Verifica se o arquivo original já existe
+        if (Files.exists(originalFilePath)) {
+            throw new FileStorageException("Arquivo já existe no diretório original: " + fileName);
+        }
+
+        // Restaura o arquivo movendo-o de volta do trash para o local original
+        Files.move(trashFilePath, originalFilePath, StandardCopyOption.REPLACE_EXISTING);
+    }
+    public void deleteFileFromTrash(String filePath) throws IOException {
+        Path trashFile = fileStorageLocation.resolve("lixeira").resolve(filePath);
+        if (Files.exists(trashFile)) {
+            Files.delete(trashFile);
+        } else {
+            throw new FileStorageNotFoundException("Arquivo não encontrado na lixeira: " + filePath);
+        }
+    }
+
+    public void deleteFolderFromTrash(String folderPath) throws IOException {
+        Path trashFolder = fileStorageLocation.resolve("lixeira").resolve(folderPath);
+        if (Files.exists(trashFolder) && Files.isDirectory(trashFolder)) {
+            Files.walkFileTree(trashFolder, new SimpleFileVisitor<Path>() {
+                @Override
+                public FileVisitResult visitFile(Path file, BasicFileAttributes attrs) throws IOException {
+                    Files.delete(file);
+                    return FileVisitResult.CONTINUE;
+                }
+
+                @Override
+                public FileVisitResult postVisitDirectory(Path dir, IOException exc) throws IOException {
+                    Files.delete(dir);
+                    return FileVisitResult.CONTINUE;
+                }
+            });
+        } else {
+            throw new FileStorageNotFoundException("Pasta não encontrada na lixeira: " + folderPath);
+        }
+    }
+
+
+
+
+
+
+
+
+
+
+
 
 }

@@ -542,6 +542,64 @@ public class FileStorageController {
             return ResponseEntity.internalServerError().build();
         }
     }
+    @GetMapping("/trash")
+    public String showTrash(Model model) throws IOException {
+        // Buscar os arquivos e pastas na lixeira
+        List<String> trashFiles = fileStorageService.getFilesInTrash();
+        List<String> trashFolders = fileStorageService.getFoldersInTrash();
+
+        // Adiciona os arquivos e pastas da lixeira ao modelo
+        model.addAttribute("trashFiles", trashFiles);
+        model.addAttribute("trashFolders", trashFolders);
+        return "trash"; // Nome do template HTML para exibir a lixeira
+    }
+
+    @PostMapping("/restoreFromTrash")
+    public ResponseEntity<?> restoreFileFromTrash(@RequestParam String filePath) {
+        try {
+            fileStorageService.restoreFileFromTrash(filePath);  // Serviço que move o arquivo de volta para o local original
+            return ResponseEntity.ok("Arquivo restaurado com sucesso!");
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body("Erro ao restaurar arquivo: " + e.getMessage());
+        }
+    }
+
+    @PostMapping("/restoreFolderFromTrash")
+    public ResponseEntity<?> restoreFolderFromTrash(@RequestParam String folderPath) {
+        try {
+            fileStorageService.restoreFolderFromTrash(folderPath);  // Serviço que move a pasta de volta para o local original
+            return ResponseEntity.ok("Pasta restaurada com sucesso!");
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body("Erro ao restaurar pasta: " + e.getMessage());
+        }
+    }
+    // Deleta definitivamente um arquivo da lixeira
+    @PostMapping("/deleteFromTrash")
+    public ResponseEntity<?> deleteFileFromTrash(@RequestParam String filePath) {
+        try {
+            fileStorageService.deleteFileFromTrash(filePath);  // Serviço que exclui o arquivo permanentemente
+            return ResponseEntity.ok("Arquivo deletado permanentemente!");
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body("Erro ao deletar arquivo: " + e.getMessage());
+        }
+    }
+
+    // Deleta definitivamente uma pasta da lixeira
+    @PostMapping("/deleteFolderFromTrash")
+    public ResponseEntity<?> deleteFolderFromTrash(@RequestParam String folderPath) {
+        try {
+            fileStorageService.deleteFolderFromTrash(folderPath);  // Serviço que exclui a pasta permanentemente
+            return ResponseEntity.ok("Pasta deletada permanentemente!");
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body("Erro ao deletar pasta: " + e.getMessage());
+        }
+    }
+
+
 
 }
 

@@ -12,6 +12,7 @@
 
         body {
             background-color: #f6f9f4;
+            font-family: Arial, sans-serif;
         }
 
         h2, h3, h4 {
@@ -88,31 +89,47 @@
         .bg-white {
             background-color: #fff;
         }
+
         .btn-outline-primary {
-    color: var(--agro-green);
-    border-color: var(--agro-green);
-}
+            color: var(--agro-green);
+            border-color: var(--agro-green);
+        }
 
-.btn-outline-primary:hover {
-    background-color: var(--agro-green);
-    color: white;
-}
-.btn-success {
-    background-color: #1B5E20;
-    border-color: #1B5E20;
-}
+        .btn-outline-primary:hover {
+            background-color: var(--agro-green);
+            color: white;
+        }
 
-.btn-success:hover {
-    background-color: #145A16;
-    border-color: #145A16;
-}
+        .btn-success {
+            background-color: #1B5E20;
+            border-color: #1B5E20;
+        }
 
+        .btn-success:hover {
+            background-color: #145A16;
+            border-color: #145A16;
+        }
 
+        .row > .col-md-4, .row > .col-md-3 {
+            padding-bottom: 15px;
+        }
 
+        .form-check-label {
+            font-weight: normal;
+        }
+
+        .folder-children {
+            padding-left: 1.5rem;
+            padding-top: 1rem;
+        }
+
+        .folder-checkbox {
+            margin-right: 10px;
+        }
     </style>
 </head>
 <body>
-<div class="container mt-4">
+<div class="container mt-5">
     <h2>Busca Avançada</h2>
     <a href="/" class="btn btn-outline-primary mb-3">
         ← Voltar ao Início
@@ -124,38 +141,41 @@
             <!-- Filtros -->
             <div class="col-md-4">
                 <label for="query" class="form-label">Buscar Texto</label>
-                <input type="text" id="query" name="query" class="form-control" th:value="${query}" />
+                <input type="text" id="query" name="query" class="form-control" th:value="${query}" placeholder="Digite o texto para pesquisa"/>
             </div>
-            <select id="keyword" name="keyword" class="form-select">
-                <option value="">Selecione uma palavra-chave</option>
-                <th:block th:each="entry : ${displayMap}">
-                    <option th:value="${entry.key}"
-                            th:text="${entry.value}"
-                            th:selected="${entry.key == keyword}"></option>
-                </th:block>
-            </select>
-
-            <div id="subkeywords-container" class="mt-3"></div>
-
-
             <div class="col-md-4">
+                <label for="keyword" class="form-label">Palavra-chave</label>
+                <select id="keyword" name="keyword" class="form-select">
+                    <option value="">Selecione uma palavra-chave</option>
+                    <th:block th:each="entry : ${displayMap}">
+                        <option th:value="${entry.key}" th:text="${entry.value}" th:selected="${entry.key == keyword}"></option>
+                    </th:block>
+                </select>
+            </div>
+
+            <div id="subkeywords-container" class="col-md-4 mt-3"></div>
+
+            <div class="col-md-3">
                 <label for="city" class="form-label">Cidade</label>
                 <select id="city" name="city" class="form-select">
                     <option value="">-- Selecione --</option>
                     <option th:each="c : ${cities}" th:value="${c}" th:text="${c}" th:selected="${c == selectedCity}"></option>
                 </select>
             </div>
-            <div class="col-md-6">
+
+            <div class="col-md-3">
                 <label for="institute" class="form-label">Instituto</label>
                 <select id="institute" name="institute" class="form-select">
                     <option value="">-- Selecione --</option>
                     <option th:each="inst : ${institutes}" th:value="${inst}" th:text="${inst}" th:selected="${inst == selectedInstitute}"></option>
                 </select>
             </div>
+
             <div class="col-md-3">
                 <label for="startDate" class="form-label">Data Início</label>
                 <input type="date" id="startDate" name="startDate" class="form-control" th:value="${startDate}" />
             </div>
+
             <div class="col-md-3">
                 <label for="endDate" class="form-label">Data Fim</label>
                 <input type="date" id="endDate" name="endDate" class="form-control" th:value="${endDate}" />
@@ -176,9 +196,7 @@
                     <li th:each="folder : ${folders}">
                         <span class="toggle me-1" onclick="toggleSubfolders(this)">&#x25B6;</span>
                         <label>
-                            <input type="checkbox" name="folders" class="folder-checkbox"
-                                   th:value="${folder.path}"
-                                   th:checked="${#lists.contains(selectedFolders ?: {}, folder.path)}" />
+                            <input type="checkbox" name="folders" class="folder-checkbox" th:value="${folder.path}" th:checked="${#lists.contains(selectedFolders ?: {}, folder.path)}" />
                             <span th:text="${folder.name}"></span>
                         </label>
                         <ul class="folder-children" style="display:none;" th:if="${folder.subFolders}" th:insert="~{this :: renderSubFolders(${folder.subFolders}, ${selectedFolders})}"></ul>
@@ -186,8 +204,6 @@
                 </ul>
             </div>
         </div>
-
-
 
         <div class="mt-4">
             <button type="submit" class="btn btn-primary w-100">Buscar</button>
@@ -219,12 +235,11 @@
                 </li>
             </ul>
             <div class="d-flex flex-wrap gap-2 mt-3">
-                <button type="submit" class="btn btn-primary">
-                    Baixar Arquivos Selecionados (ZIP)
-                </button>
+                <button type="submit" class="btn btn-primary">Baixar Arquivos Selecionados (ZIP)</button>
             </div>
         </div>
     </form>
+
     <form th:action="@{/explorer/download-folders}" method="post" onsubmit="return prepareSelectedFoldersDownload();" style="margin-top: 15px;">
         <input type="hidden" name="selectedFolders" id="selectedFoldersInputTop" />
         <button type="submit" class="btn btn-success">
@@ -232,17 +247,6 @@
         </button>
     </form>
 </div>
-
-<th:block th:fragment="renderSubFolders(subfolders, selectedFolders)">
-    <li th:each="sub : ${subfolders}">
-        <span class="toggle" onclick="toggleSubfolders(this)">&#x25B6;</span>
-        <label>
-            <input type="checkbox" name="folders" class="folder-checkbox" th:value="${sub.path}" th:checked="${#lists.contains(selectedFolders ?: {}, sub.path)}" />
-            <span th:text="${sub.name}"></span>
-        </label>
-        <ul class="folder-children" style="display:none;" th:if="${sub.subFolders}" th:insert="~{this :: renderSubFolders(${sub.subFolders}, ${selectedFolders})}"></ul>
-    </li>
-</th:block>
 
 <script>
     function toggleSubfolders(element) {
@@ -267,82 +271,66 @@
         const checkboxes = document.querySelectorAll('.file-checkbox');
         checkboxes.forEach(cb => cb.checked = master.checked);
     }
-    function prepareSelectedFolders() {
-    const selected = Array.from(document.querySelectorAll('.folder-checkbox:checked'))
-                          .map(cb => cb.value.trim()) // trim para evitar espaços extras
-                          .filter(val => val !== ''); // ignora vazios
 
-    if (selected.length === 0) {
-        alert('Selecione pelo menos uma pasta.');
-        return false; // impede envio se nada foi selecionado
-    }
-
-    const selectedString = selected.join(',');
-    const input = document.getElementById('selectedFoldersInputTop');
-    input.value = selectedString;
-
-    return true; // permite envio
-}
-    function prepareSelectedFoldersDownload() {
-    const selectedFolders = Array.from(document.querySelectorAll('.folder-checkbox:checked'))
-        .map(cb => cb.value.trim())
-        .filter(v => v !== '');
-
-    if (selectedFolders.length === 0) {
-        alert('Selecione pelo menos uma pasta.');
-        return false;
-    }
-    }
     document.getElementById('keyword').addEventListener('change', function() {
-    const keyword = this.value;
-    const container = document.getElementById('subkeywords-container');
-    container.innerHTML = ''; // Limpa os checkboxes anteriores
+        const keyword = this.value;
+        const container = document.getElementById('subkeywords-container');
+        container.innerHTML = ''; // Limpa os checkboxes anteriores
 
-    if (keyword) {
-        fetch(`/advanced-search/advanced/subkeywords?keyword=${encodeURIComponent(keyword)}`)
-            .then(response => response.json())  // Espera o retorno como JSON
-            .then(data => {
-                if (data.length === 0) {
-                    container.innerHTML = '<p class="text-muted">Nenhuma subpalavra encontrada.</p>';
-                } else {
-                    data.forEach((sub, index) => {
-                        const checkboxId = 'sub_' + index;
+        if (keyword) {
+            fetch(`/advanced-search/advanced/subkeywords?keyword=${encodeURIComponent(keyword)}`)
+                .then(response => response.json())  // Espera o retorno como JSON
+                .then(data => {
+                    if (data.length === 0) {
+                        container.innerHTML = '<p class="text-muted">Nenhuma subpalavra encontrada.</p>';
+                    } else {
+                        data.forEach((sub, index) => {
+                            const checkboxId = 'sub_' + index;
 
-                        // Cria o checkbox
-                        const checkbox = document.createElement('input');
-                        checkbox.type = 'checkbox';
-                        checkbox.name = 'selectedSubkeywords';
-                        checkbox.value = sub;
-                        checkbox.id = checkboxId;
-                        checkbox.className = 'form-check-input me-2';
+                            // Cria o checkbox
+                            const checkbox = document.createElement('input');
+                            checkbox.type = 'checkbox';
+                            checkbox.name = 'selectedSubkeywords';
+                            checkbox.value = sub;
+                            checkbox.id = checkboxId;
+                            checkbox.className = 'form-check-input me-2';
 
-                        // Cria o label
-                        const label = document.createElement('label');
-                        label.htmlFor = checkboxId;
-                        label.className = 'form-check-label me-3';
-                        label.textContent = sub;
+                            // Cria o label
+                            const label = document.createElement('label');
+                            label.htmlFor = checkboxId;
+                            label.className = 'form-check-label me-3';
+                            label.textContent = sub;
 
-                        // Agrupa os dois
-                        const div = document.createElement('div');
-                        div.className = 'form-check mb-2';
-                        div.appendChild(checkbox);
-                        div.appendChild(label);
+                            // Agrupa os dois
+                            const div = document.createElement('div');
+                            div.className = 'form-check mb-2';
+                            div.appendChild(checkbox);
+                            div.appendChild(label);
 
-                        // Adiciona no container
-                        container.appendChild(div);
-                    });
-                }
-            })
-            .catch(error => {
-                console.error('Erro ao carregar subpalavras:', error);
-                container.innerHTML = '<p class="text-danger">Erro ao carregar subpalavras.</p>';
-            });
-    }
-});
-
-
-
-
+                            // Adiciona no container
+                            container.appendChild(div);
+                        });
+                    }
+                })
+                .catch(error => {
+                    console.error('Erro ao carregar subpalavras:', error);
+                    container.innerHTML = '<p class="text-danger">Erro ao carregar subpalavras.</p>';
+                });
+        }
+    });
 </script>
+
+<th:block th:fragment="renderSubFolders(subfolders, selectedFolders)">
+    <li th:each="sub : ${subfolders}">
+        <span class="toggle" onclick="toggleSubfolders(this)">&#x25B6;</span>
+        <label>
+            <input type="checkbox" name="folders" class="folder-checkbox" th:value="${sub.path}" th:checked="${#lists.contains(selectedFolders ?: {}, sub.path)}" />
+            <span th:text="${sub.name}"></span>
+        </label>
+        <ul class="folder-children" style="display:none;" th:if="${sub.subFolders}" th:insert="~{this :: renderSubFolders(${sub.subFolders}, ${selectedFolders})}"></ul>
+    </li>
+</th:block>
+
+
 </body>
 </html>

@@ -235,15 +235,6 @@ public class FileViewController {
         return "search"; // <- ou o nome da sua tela privada
     }
 
-
-
-
-
-
-
-
-
-
     private String sanitizeFileName(String fileName) {
         // Verifica se o nome do arquivo contém caracteres inválidos
         if (fileName.contains("..") || fileName.contains("/") || fileName.contains("\\")) {
