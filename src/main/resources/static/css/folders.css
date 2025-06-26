@@ -21,7 +21,7 @@ h1, h2, h3 {
 }
 
 .top-bar {
-    background-color: #343a40;
+    background-color: #1B5E20;
     padding: 10px 20px;
 }
 
@@ -112,7 +112,7 @@ td i:hover {
     position: fixed;
     bottom: 30px;
     right: 30px;
-    background-color: #007bff;
+    background-color: #ffc107;
     color: white;
     border: none;
     border-radius: 50%;
@@ -125,7 +125,7 @@ td i:hover {
 }
 
 .btn-flutuante:hover {
-    background-color: #0056b3;
+    background-color: #E0C404;
 }
 
 /* Modal */
@@ -242,7 +242,6 @@ td i:hover {
     align-items: center;
     padding: 10px 15px;
     font-size: 16px;
-    background-color: #007BFF;
     color: white;
     border-radius: 4px;
     text-decoration: none;
@@ -250,7 +249,7 @@ td i:hover {
 }
 
 .btn-voltar:hover {
-    background-color: #0056b3;
+
 }
 
 .btn-voltar i {
