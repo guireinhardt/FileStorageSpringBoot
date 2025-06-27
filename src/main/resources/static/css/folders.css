@@ -7,7 +7,7 @@ body {
 }
 
 .container {
-    max-width: 900px;
+    width: auto;
     margin: 40px auto;
     background: white;
     padding: 30px;
@@ -20,11 +20,26 @@ h1, h2, h3 {
     margin-top: 0;
 }
 
+/* Estilo da barra superior */
 .top-bar {
     background-color: #1B5E20;
     padding: 10px 20px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between; /* Espaço entre os elementos */
 }
 
+/* Logo no centro */
+.logo-container {
+    flex-grow: 1; /* O logo ocupa todo o espaço disponível */
+    text-align: center;
+}
+
+.logo {
+    height: 40px; /* Ajuste o tamanho do logo conforme necessário */
+}
+
+/* Estilo do botão Voltar */
 .btn-voltar {
     color: white;
     text-decoration: none;
@@ -34,6 +49,7 @@ h1, h2, h3 {
 .btn-voltar:hover {
     text-decoration: underline;
 }
+
 
 .btn-upload {
     display: inline-block;
@@ -405,6 +421,36 @@ td i:hover {
 .move-btn-cancel {
     background-color: #ccc;
     color: #333;
+}
+/* Permite a quebra de linha no nome do arquivo sem quebrar o layout */
+.file-name {
+    word-wrap: break-word;
+    word-break: break-all;
+    overflow-wrap: break-word;
+    max-width: 100%; /* Garante que o nome do arquivo não ultrapasse o limite */
+    white-space: normal; /* Permite a quebra de linha */
+}
+
+ /* Estilo da Barra de Progresso */
+.progress-container {
+    width: 100%;
+    height: 20px;
+    background-color: #f3f3f3;
+    border-radius: 10px;
+    display: none;
+    margin-top: 20px;
+}
+
+.progress-bar {
+    height: 100%;
+    background-color: #28a745;
+    width: 0;
+    border-radius: 10px;
+}
+
+/* Cursor para indicar que algo pode ser arrastado */
+body {
+    cursor: pointer;
 }
 
 

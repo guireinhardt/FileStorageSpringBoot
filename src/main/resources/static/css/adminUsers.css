@@ -1,0 +1,109 @@
+.navbar {
+    background-color: #1B5E20;
+    display: flex;
+    align-items: center;
+    padding: 0.5rem 1rem;
+    color: white;
+    justify-content: space-between; /* Espaça entre a logo e os itens */
+}
+
+/* Logo - Fica à esquerda */
+.navbar .navbar-logo {
+    display: flex;
+    align-items: center;
+}
+
+.navbar img {
+    height: 40px; /* Tamanho da logo reduzido */
+}
+
+/* Itens à direita */
+.navbar-right {
+    display: flex;
+    align-items: center;
+    gap: 1rem; /* Diminuindo o espaço entre os itens */
+}
+
+/* Links da navbar */
+.navbar-right a {
+    color: white;
+    font-weight: bold;
+    text-decoration: none;
+    transition: color 0.3s ease;
+}
+
+.navbar-right a:hover {
+    color: #d4edda;
+    text-decoration: none;
+    font-weight:italic;
+}
+
+/* Menu de usuário */
+.user-menu {
+    position: relative;
+}
+
+.user-icon {
+    cursor: pointer;
+}
+
+.user-icon img.profile-pic {
+    border-radius: 50%;
+    width: 30px; /* Reduzindo o tamanho da imagem */
+    height: 30px;
+    object-fit: cover;
+    border: 2px solid white;
+}
+
+/* Dropdown genérico */
+.dropdown-content {
+    background-color: #fff;
+    border-radius: 6px;
+    overflow: hidden;
+    box-shadow: 0 4px 8px rgba(0,0,0,0.15);
+    position: absolute;
+    right: 0;
+    top: 100%;
+    display: none;
+    min-width: 150px;
+    z-index: 100;
+}
+
+.dropdown-content a {
+    display: block;
+    padding: 6px 12px; /* Reduzindo o padding */
+    color: #1B5E20;
+    text-decoration: none;
+    font-weight: 500;
+}
+
+.dropdown-content a:hover {
+    background-color: #f1f1f1;
+}
+/* Estilo do botão com efeito glow */
+.btn-glow {
+    background-color: #4CAF50;  /* Cor do fundo do botão (verde, que combina com o navbar) */
+    color: white;               /* Cor do texto */
+    border: none;
+    padding: 12px 24px;
+    border-radius: 6px;
+    font-size: 16px;
+    position: relative;         /* Para criar o efeito de brilho */
+    transition: all 0.4s ease;  /* Transição suave */
+    box-shadow: 0 0 5px rgba(76, 175, 80, 0.6), 0 0 10px rgba(76, 175, 80, 0.6); /* Brilho verde */
+}
+
+/* Efeito de Glow ao passar o mouse */
+.btn-glow:hover {
+    background-color: #45a049;  /* Cor de fundo mais escura ao passar o mouse */
+    box-shadow: 0 0 15px rgba(76, 175, 80, 0.8), 0 0 30px rgba(76, 175, 80, 0.8); /* Brilho mais forte */
+    transform: scale(1.05);  /* Leve aumento do botão */
+}
+
+/* Efeito de glow mais suave em foco (quando o botão estiver em foco) */
+.btn-glow:focus {
+    outline: none;
+    box-shadow: 0 0 15px rgba(76, 175, 80, 1), 0 0 25px rgba(76, 175, 80, 1); /* Glow mais intenso */
+}
+
+
