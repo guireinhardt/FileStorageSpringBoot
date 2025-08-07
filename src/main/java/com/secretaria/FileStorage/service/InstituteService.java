@@ -8,13 +8,20 @@ import java.util.List;
 public class InstituteService {
     public List<String> getAllInstitutes() {
         return List.of(
-                "APTA REGIONAL",
                 "IAC",
                 "IB",
                 "IEA",
                 "IP",
                 "ITAL",
-                "IZ"
+                "IZ",
+                "APTA REGIONAL",
+                "CODEAGRO",
+                "COSALI",
+                "DEFESA",
+                "ITESP",
+                "CAMARAS SETORIAIS",
+                "CATI",
+                "COOPERATIVISMO"
         );
     }
 }

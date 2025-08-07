@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="pt-BR" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>Gerenciamento de Palavras-Chave</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+</head>
+<body>
+
+<div class="container mt-5">
+    <h1>Gerenciamento de Palavras-Chave</h1>
+
+    <form action="/keywords/add" method="post">
+        <div class="mb-3">
+            <label for="keyword" class="form-label">Nova Palavra-Chave</label>
+            <input type="text" class="form-control" id="keyword" name="keyword" required>
+        </div>
+        <div class="mb-3">
+            <label for="subKeywords" class="form-label">Subpalavras</label>
+            <input type="text" class="form-control" id="subKeywords" name="subKeywords" placeholder="Digite as subpalavras, separadas por vírgulas" required>
+        </div>
+        <button type="submit" class="btn btn-primary">Adicionar Palavra-Chave</button>
+    </form>
+
+    <hr>
+
+    <h2>Palavras-Chave Existentes</h2>
+    <table class="table">
+        <thead>
+        <tr>
+            <th>Palavra-Chave</th>
+            <th>Subpalavras</th>
+            <th>Ações</th>
+        </tr>
+        </thead>
+        <tbody>
+        <tr th:each="entry : ${keywordMap}">
+            <!-- Exibe a chave formatada -->
+            <td th:text="${displayMap[entry.key]}"></td>
+            <td>
+                <ul>
+                    <li th:each="sub : ${entry.value}" th:text="${sub}"></li>
+                </ul>
+            </td>
+            <td>
+                <form action="/keywords/addSub" method="post" style="display:inline;">
+                    <input type="hidden" name="keyword" th:value="${entry.key}" />
+                    <input type="text" name="subKeyword" class="form-control form-control-sm" required />
+                    <button type="submit" class="btn btn-sm btn-success">Adicionar Subpalavra</button>
+                </form>
+            </td>
+        </tr>
+        </tbody>
+    </table>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>

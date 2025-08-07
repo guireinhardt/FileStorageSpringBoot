@@ -32,8 +32,15 @@
                 <select id="keyword" name="keyword" class="form-select" onchange="updateSubkeywords()">
                     <option value="">-- Selecione --</option>
                     <th:block th:each="key : ${keywords}">
-                        <option th:value="${key}" th:text="${displayMap.get(key)}" th:selected="${key == selectedKeyword}"></option>
+                        <option th:value="${key}" th:text="${key}" th:selected="${key == selectedKeyword}"></option>
+
+                        <th:block th:if="${subkeywordsMap[key] != null}">
+                            <th:block th:each="sub : ${subkeywordsMap[key]}">
+                                <option th:value="${sub}" th:text="${sub}" th:selected="${selectedSubkeywords.contains(sub)}"></option>
+                            </th:block>
+                        </th:block>
                     </th:block>
+
                 </select>
             </div>
 
@@ -58,7 +65,7 @@
 
             <div class="col-md-3">
                 <select name="institute" class="form-select">
-                    <option value="">Selecione um instituto</option>
+                    <option value="">Selecione um orgão</option>
                     <option th:each="inst : ${institutes}" th:value="${inst}" th:text="${inst}"
                             th:selected="${inst == selectedInstitute}"></option>
                 </select>
@@ -66,7 +73,7 @@
 
             <div class="col-md-3">
                 <select name="city" class="form-select">
-                    <option value="">Selecione uma cidade</option>
+                    <option value="">Selecione um município</option>
                     <option th:each="city : ${cities}" th:value="${city}" th:text="${city}" th:selected="${city == selectedCity}"></option>
                 </select>
 

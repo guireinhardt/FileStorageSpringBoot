@@ -3,9 +3,12 @@ package com.secretaria.FileStorage.controller;
 import com.secretaria.FileStorage.config.FileStorageConfig;
 import com.secretaria.FileStorage.config.KeywordConfig;
 import com.secretaria.FileStorage.dto.FileResultDTO;
+import com.secretaria.FileStorage.entity.KeywordEntity;
+import com.secretaria.FileStorage.entity.SubkeywordEntity;
 import com.secretaria.FileStorage.exception.FileStorageException;
 import com.secretaria.FileStorage.exception.FileStorageNotFoundException;
 import com.secretaria.FileStorage.service.*;
+import com.secretaria.FileStorage.utils.StringUtils;
 import com.secretaria.FileStorage.vo.FileVO;
 import com.secretaria.FileStorage.infra.security.TokenService;
 import jakarta.servlet.http.HttpServletRequest;
@@ -20,29 +23,21 @@ import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
-import org.springframework.util.StringUtils;
-import org.springframework.web.bind.ServletRequestParameterPropertyValues;
 import org.springframework.web.bind.annotation.*;
-import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.servlet.HandlerMapping;
 
 
 import java.io.*;
 import java.net.MalformedURLException;
 import java.net.URLDecoder;
-import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.time.LocalDate;
 import java.util.*;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import java.io.UnsupportedEncodingException;
-import java.net.URLEncoder;
-
-
 
 
 @Controller
@@ -57,7 +52,7 @@ public class FileViewController {
     @Autowired
     private KeywordConfig keywordConfig;
     @Autowired
-    private  KeywordService keywordService;
+    private KeywordService keywordService;
     @Autowired
     private TokenService tokenService;
 
@@ -184,8 +179,19 @@ public class FileViewController {
     @GetMapping("/view/subkeywords")
     @ResponseBody
     public List<String> getSubkeywordsP(@RequestParam String keyword) {
-        return keywordService.getKeywordMap().getOrDefault(keyword, List.of());
+        // Normaliza a palavra-chave recebida
+        String normalizedKeyword = StringUtils.normalize(keyword);
+
+        // Busca as subpalavras associadas à palavra-chave normalizada
+        List<String> subkeywords = keywordService.getAllKeywords().stream()
+                .filter(k -> StringUtils.normalize(k.getPalavra()).equals(normalizedKeyword))
+                .flatMap(k -> k.getSubkeywords().stream())  // Extrai as subpalavras associadas
+                .map(SubkeywordEntity::getPalavra)  // Mapeia para apenas o nome das subpalavras
+                .collect(Collectors.toList());  // Coleta em uma lista
+
+        return subkeywords;
     }
+
     @GetMapping("/search")
     public String searchFilesPrivate(
             @RequestParam(required = false) String query,
@@ -197,6 +203,7 @@ public class FileViewController {
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate endDate,
             Model model) throws IOException {
 
+        // Verifica se há filtros aplicados
         boolean hasFilters = (query != null && !query.isBlank())
                 || (keyword != null && !keyword.isBlank())
                 || (subkeywords != null && !subkeywords.isEmpty())
@@ -207,33 +214,47 @@ public class FileViewController {
 
         List<FileResultDTO> results = new ArrayList<>();
 
+        // Se houver filtros, realiza a busca de arquivos
         if (hasFilters) {
-            results = fileSearchService.searchFiles(query, keyword,subkeywords, institute, city, startDate, endDate);
+            results = fileSearchService.searchFiles(query, keyword, subkeywords, institute, city, startDate, endDate);
         }
 
-        List<String> keywords = new ArrayList<>(keywordService.getDisplayMap().keySet());
-        Map<String, List<String>> subkeywordsMap = keywordService.getKeywordMap();
+        // Carrega todas as palavras-chave e suas subpalavras
+        List<KeywordEntity> allKeywords = keywordService.getAllKeywords();
+        List<String> keywords = new ArrayList<>();
+        Map<String, List<String>> subkeywordsMap = new HashMap<>();
 
+        // Preenche as palavras-chave e subpalavras no modelo
+        for (KeywordEntity k : allKeywords) {
+            keywords.add(k.getPalavra());
+            subkeywordsMap.put(k.getPalavra(), k.getSubkeywords().stream()
+                    .map(SubkeywordEntity::getPalavra)
+                    .collect(Collectors.toList()));
+        }
+        System.out.println("Palavras-chave encontradas: " + keywords);
+
+        // Passa os resultados, palavras-chave e subpalavras para o modelo
         model.addAttribute("files", results);
         model.addAttribute("hasFilters", hasFilters);
-
         model.addAttribute("keywords", keywords);
-        model.addAttribute("displayMap", keywordService.getDisplayMap());
         model.addAttribute("selectedKeyword", keyword);
         model.addAttribute("subkeywordsMap", subkeywordsMap);
         model.addAttribute("selectedSubkeywords", subkeywords != null ? subkeywords : new ArrayList<>());
 
+        // Passa cidades e institutos
         model.addAttribute("cities", cityService.getAllCities());
         model.addAttribute("selectedCity", city);
 
         model.addAttribute("institutes", instituteService.getAllInstitutes());
         model.addAttribute("selectedInstitute", institute);
 
+        // Passa as datas de início e fim
         model.addAttribute("startDate", startDate);
         model.addAttribute("endDate", endDate);
 
-        return "search"; // <- ou o nome da sua tela privada
+        return "search"; // O nome do template da página de resultados
     }
+
 
     private String sanitizeFileName(String fileName) {
         // Verifica se o nome do arquivo contém caracteres inválidos

@@ -2,7 +2,10 @@ package com.secretaria.FileStorage.controller.publico;
 
 import com.secretaria.FileStorage.config.KeywordConfig;
 import com.secretaria.FileStorage.dto.FileResultDTO;
+import com.secretaria.FileStorage.entity.KeywordEntity;
+import com.secretaria.FileStorage.entity.SubkeywordEntity;
 import com.secretaria.FileStorage.service.*;
+import com.secretaria.FileStorage.utils.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.io.Resource;
 import org.springframework.core.io.UrlResource;
@@ -22,10 +25,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.time.LocalDate;
-import java.util.Collections;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 import java.util.stream.Collectors;
 
 @Controller
@@ -54,27 +54,32 @@ public class PublicAdvancedSearchController {
 
     @GetMapping("/advanced-public")
     public String showPublicForm(Model model) {
-        // Pega as chaves normalizadas (exemplo: "maquinas", "plantacao")
-        Set<String> keywords = keywordService.getKeywordMap().keySet();
+        // Pega todas as palavras-chave
+        List<KeywordEntity> allKeywords = keywordService.getAllKeywords();
 
-        // Pega o map para exibição (chave com acento)
-        Map<String, String> displayMap = keywordService.getDisplayMap();
+        // Cria uma lista de palavras-chave e um mapa de subpalavras
+        List<String> keywords = new ArrayList<>();
+        Map<String, List<String>> subkeywordsMap = new HashMap<>();
 
-        // Passa as subpalavras para a view (mapa chave->lista de subpalavras)
-        Map<String, List<String>> subkeywordsMap = keywordService.getKeywordMap();
+        for (KeywordEntity keyword : allKeywords) {
+            keywords.add(keyword.getPalavra());
+            subkeywordsMap.put(keyword.getPalavra(), keyword.getSubkeywords().stream()
+                    .map(SubkeywordEntity::getPalavra)
+                    .collect(Collectors.toList()));
+        }
 
         model.addAttribute("query", "");
         model.addAttribute("selectedFolders", List.of());
         model.addAttribute("files", null);
         model.addAttribute("foldersSet", Collections.emptySet());
         model.addAttribute("keywords", keywords);
-        model.addAttribute("displayMap", displayMap);
         model.addAttribute("subkeywordsMap", subkeywordsMap);
         model.addAttribute("keyword", "");
         model.addAttribute("selectedSubkeywords", List.of());
 
         return "public/public-search";
     }
+
 
     @PostMapping("/advanced-public")
     public String searchPublicFiles(
@@ -94,43 +99,64 @@ public class PublicAdvancedSearchController {
                 query,
                 keyword,
                 selectedSubkeywords,
-                institute,   // Passa o instituto
-                city,         // Passa a cidade
-                startDate,    // Passa a data de início
-                endDate,      // Passa a data de fim
+                institute,
+                city,
+                startDate,
+                endDate,
                 publicRoot
         );
 
-        // Passa as listas de institutos e cidades para o modelo
-        model.addAttribute("institutes", instituteService.getAllInstitutes());
-        model.addAttribute("cities", cityService.getAllCities());
+        // Carregar palavras-chave e subpalavras
+        List<KeywordEntity> allKeywords = keywordService.getAllKeywords();
+        List<String> keywords = new ArrayList<>();
+        Map<String, List<String>> subkeywordsMap = new HashMap<>();
 
-        Set<String> foldersSet = files.stream()
-                .map(FileResultDTO::getFullPath)
-                .collect(Collectors.toSet());
+        for (KeywordEntity k : allKeywords) {
+            keywords.add(k.getPalavra());
+            subkeywordsMap.put(k.getPalavra(), k.getSubkeywords().stream()
+                    .map(SubkeywordEntity::getPalavra)
+                    .collect(Collectors.toList()));
+        }
 
-        Set<String> keywords = keywordService.getKeywordMap().keySet();
-        Map<String, String> displayMap = keywordService.getDisplayMap();
-        Map<String, List<String>> subkeywordsMap = keywordService.getKeywordMap();
-
-        model.addAttribute("query", query);
         model.addAttribute("files", files);
-        model.addAttribute("foldersSet", foldersSet);
+        model.addAttribute("hasFilters", true);
+
         model.addAttribute("keywords", keywords);
-        model.addAttribute("displayMap", displayMap);
         model.addAttribute("subkeywordsMap", subkeywordsMap);
-        model.addAttribute("keyword", keyword);
         model.addAttribute("selectedSubkeywords", selectedSubkeywords != null ? selectedSubkeywords : List.of());
+
+        // Passa cidades e institutos
+        model.addAttribute("cities", cityService.getAllCities());
+        model.addAttribute("selectedCity", city);
+
+        model.addAttribute("institutes", instituteService.getAllInstitutes());
+        model.addAttribute("selectedInstitute", institute);
+
+        // Passa as datas
+        model.addAttribute("startDate", startDate);
+        model.addAttribute("endDate", endDate);
 
         return "public/public-search";
     }
 
 
+
     @GetMapping("/subkeywords")
     @ResponseBody
     public List<String> getSubkeywords(@RequestParam String keyword) {
-        return keywordService.getKeywordMap().getOrDefault(keyword, List.of());
+        // Normaliza a palavra-chave
+        String normalizedKeyword = StringUtils.normalize(keyword);
+
+        // Encontra a palavra-chave e retorna suas subpalavras
+        List<String> subkeywords = keywordService.getAllKeywords().stream()
+                .filter(k -> StringUtils.normalize(k.getPalavra()).equals(normalizedKeyword))
+                .flatMap(k -> k.getSubkeywords().stream())
+                .map(SubkeywordEntity::getPalavra)
+                .collect(Collectors.toList());
+
+        return subkeywords;
     }
+
     @GetMapping("/view-public")
     public ResponseEntity<Resource> viewFile(@RequestParam String path) throws IOException {
         Path filePath = fileListService.getRootLocation().resolve(path).normalize();

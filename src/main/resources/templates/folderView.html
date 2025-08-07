@@ -102,6 +102,10 @@
                         title="Mover Arquivo">
                     <i class="fas fa-folder-open"></i>
                 </button>
+                <a href="#" class="btn-delete" th:attr="data-path=${file.relativePath != null ? file.relativePath : ''}" onclick="moveToTrash(this)">
+                    <i class="fas fa-trash-alt"></i>
+                </a>
+
             </td>
         </tr>
         </tbody>
@@ -484,8 +488,32 @@ let isFolder = false;
         alert("Erro ao carregar pastas.");
     });
 }
+   function moveToTrash(button) {
+    const filePath = button.getAttribute('data-path');  // Captura o caminho do arquivo
+    console.log(filePath);  // Verifique no console se o valor está correto
 
-
+    if (confirm(`Tem certeza que deseja mover o arquivo ${filePath} para a Lixeira?`)) {
+        fetch('/storage/delete', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ path: filePath })  // Passa o caminho do arquivo
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.message) {
+                alert(data.message);
+                location.reload();
+            } else if (data.error) {
+                alert(data.error);
+            }
+        })
+        .catch(error => {
+            alert('Erro ao mover para a lixeira: ' + error);
+        });
+    }
+}
 
 
 

@@ -9,6 +9,7 @@ import org.springframework.boot.context.properties.EnableConfigurationProperties
 
 @SpringBootApplication
 @EnableConfigurationProperties({FileStorageConfig.class})
+
 public class FileStorageApplication {
 
 
@@ -17,7 +18,3 @@ public class FileStorageApplication {
 	}
 
 }
-
-
-
-

@@ -162,11 +162,15 @@ public class FileStorageService {
         Path sourceFile = fileStorageLocation.resolve(fileName);
         Path trashFile = fileStorageLocation.resolve("lixeira").resolve(fileName);
 
+        // Verifica se o arquivo existe e se não é uma pasta
         if (!Files.exists(sourceFile) || Files.isDirectory(sourceFile)) {
             throw new FileStorageNotFoundException("Arquivo não encontrado: " + fileName);
         }
 
+        // Cria o diretório da lixeira, caso não exista
         Files.createDirectories(trashFile.getParent());
+
+        // Move o arquivo para a lixeira
         Files.move(sourceFile, trashFile, StandardCopyOption.REPLACE_EXISTING);
     }
 
@@ -175,14 +179,15 @@ public class FileStorageService {
         Path sourceFolder = fileStorageLocation.resolve(folderName);
         Path trashFolder = fileStorageLocation.resolve("lixeira").resolve(folderName);
 
+        // Verifica se a pasta existe e se é de fato uma pasta
         if (!Files.exists(sourceFolder) || !Files.isDirectory(sourceFolder)) {
             throw new FileStorageNotFoundException("Pasta não encontrada: " + folderName);
         }
 
-        // Cria diretórios da lixeira, se necessário
+        // Cria o diretório da lixeira, caso não exista
         Files.createDirectories(trashFolder.getParent());
 
-        // Move a pasta inteira (inclusive conteúdo)
+        // Move a pasta inteira para a lixeira (inclusive arquivos dentro dela)
         Files.walk(sourceFolder)
                 .sorted((a, b) -> b.compareTo(a)) // Inverte para mover arquivos antes das pastas
                 .forEach(source -> {
@@ -191,16 +196,17 @@ public class FileStorageService {
                         if (Files.isDirectory(source)) {
                             Files.createDirectories(destination);
                         } else {
-                            Files.copy(source, destination, StandardCopyOption.REPLACE_EXISTING);
+                            Files.move(source, destination, StandardCopyOption.REPLACE_EXISTING);  // Move os arquivos
                         }
                     } catch (IOException e) {
                         throw new RuntimeException("Erro ao mover pasta para a lixeira: " + e.getMessage());
                     }
                 });
 
-        // Após mover tudo, deleta a original
+        // Deleta a pasta original
         deleteDirectoryRecursively(sourceFolder);
     }
+
     private Path getTrashFolder() {
         return fileStorageLocation.resolve("lixeira").normalize();  // Local da lixeira
     }

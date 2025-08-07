@@ -1,0 +1,202 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>Relatório de Crescimento de Dados</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script> <!-- Adiciona o Chart.js -->
+    <style>
+        /* Estilo básico para a página */
+        h1 {
+            text-align: center;
+            margin-top: 20px;
+        }
+
+        .chart-container {
+            width: 80%;
+            margin: 0 auto;
+            margin-top: 20px;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+        }
+
+        th, td {
+            border: 1px solid #ddd;
+            padding: 8px;
+            text-align: center;
+        }
+
+        th {
+            background-color: #f2f2f2;
+        }
+
+        /* Botão */
+        .btn {
+            padding: 10px 20px;
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            cursor: pointer;
+        }
+
+        .btn:hover {
+            background-color: #45a049;
+        }
+    </style>
+</head>
+<body>
+
+<h1>Relatório de Crescimento de Dados</h1>
+
+<!-- Seletor de Mês -->
+<div style="text-align: center; margin-top: 20px;">
+    <label for="monthSelector">Escolha o Mês:</label>
+    <select id="monthSelector" class="btn" onchange="updateChart()">
+        <option value="January">Janeiro</option>
+        <option value="February">Fevereiro</option>
+        <option value="March">Março</option>
+        <option value="April">Abril</option>
+        <option value="May">Maio</option>
+        <option value="June">Junho</option>
+        <option value="July">Julho</option>
+        <option value="August">Agosto</option>
+        <option value="September">Setembro</option>
+        <option value="October">Outubro</option>
+        <option value="November">Novembro</option>
+        <option value="December">Dezembro</option>
+    </select>
+</div>
+
+<!-- Exibição dos gráficos -->
+<div class="chart-container">
+    <canvas id="growthChartMonthly"></canvas>  <!-- Gráfico Mensal -->
+    <canvas id="growthChartAnnual"></canvas>   <!-- Gráfico Anual -->
+</div>
+
+<!-- Tabela para mostrar os dados de crescimento -->
+<table>
+    <thead>
+    <tr>
+        <th>Período</th>
+        <th>Tamanho dos Dados (bytes)</th>
+        <th>Crescimento (%)</th>
+    </tr>
+    </thead>
+    <tbody>
+    <!-- Tabela para o Crescimento Mensal -->
+    <tr th:each="dataPoint : ${monthlyGrowth}">
+        <td th:text="${dataPoint.period}"></td>
+        <td th:text="${dataPoint.dataSize}"></td>
+        <td th:text="${dataPoint.growth}"></td>
+    </tr>
+    </tbody>
+</table>
+
+<!-- Botão para baixar o relatório em PDF -->
+<div style="text-align: center; margin-top: 30px;">
+    <button class="btn" onclick="window.print()">Baixar Relatório em PDF</button>
+</div>
+
+<script>
+    // Dados simulados de crescimento de dados (esses dados seriam fornecidos pelo Controller REST)
+    var growthDataMonthly = /*[[${monthlyGrowth}]]*/ [];
+    var growthDataAnnual = /*[[${annualGrowth}]]*/ [];
+
+    var currentMonth = "January";  // Mês padrão
+    var currentYear = "2022";     // Ano padrão
+
+    var growthChartMonthly = null;  // Gráfico Mensal
+    var growthChartAnnual = null;   // Gráfico Anual
+
+    // Função para atualizar os gráficos
+    function updateChart() {
+        currentMonth = document.getElementById("monthSelector").value;  // Obter o mês selecionado
+        var monthData = growthDataMonthly[currentMonth];
+
+        // Atualiza o gráfico mensal com os dados do mês
+        updateGraphMonthly(monthData);
+
+        // Atualiza o gráfico anual (mesmo exemplo de dados)
+        var yearData = growthDataAnnual[currentYear];
+        updateGraphAnnual(yearData);
+    }
+
+    // Função para atualizar o gráfico mensal
+    function updateGraphMonthly(monthData) {
+        var data = {
+            labels: [monthData.period],  // Rótulo para o gráfico
+            datasets: [{
+                label: 'Crescimento de Dados (%)',
+                data: [monthData.growth],  // Crescimento do mês
+                borderColor: 'rgba(75, 192, 192, 1)',
+                fill: false
+            }]
+        };
+
+        if (growthChartMonthly != null) {
+            growthChartMonthly.destroy();  // Destruir o gráfico anterior
+        }
+
+        var ctx = document.getElementById('growthChartMonthly').getContext('2d');
+        growthChartMonthly = new Chart(ctx, {
+            type: 'line',  // Tipo de gráfico (linha)
+            data: data,
+            options: {
+                responsive: true,
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        title: {
+                            display: true,
+                            text: 'Crescimento (%)'
+                        }
+                    }
+                }
+            }
+        });
+    }
+
+    // Função para atualizar o gráfico anual
+    function updateGraphAnnual(yearData) {
+        var data = {
+            labels: [yearData.period],  // Rótulo para o gráfico
+            datasets: [{
+                label: 'Crescimento Anual de Dados (%)',
+                data: [yearData.growth],  // Crescimento anual
+                borderColor: 'rgba(255, 159, 64, 1)',
+                fill: false
+            }]
+        };
+
+        if (growthChartAnnual != null) {
+            growthChartAnnual.destroy();  // Destruir o gráfico anterior
+        }
+
+        var ctx = document.getElementById('growthChartAnnual').getContext('2d');
+        growthChartAnnual = new Chart(ctx, {
+            type: 'line',  // Tipo de gráfico (linha)
+            data: data,
+            options: {
+                responsive: true,
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        title: {
+                            display: true,
+                            text: 'Crescimento Anual (%)'
+                        }
+                    }
+                }
+            }
+        });
+    }
+
+    // Inicializa os gráficos com os dados padrões
+    updateChart();
+</script>
+
+</body>
+</html>

@@ -63,7 +63,7 @@
                 <a href="#" th:attr="data-folder-name=${folder.name}" onclick="handleDownload(this)">
                     <i class="fas fa-download"></i> Baixar pasta
                 </a>
-                <a href="#" th:attr="data-folder=${folder.name}" onclick="moveFolderToTrash(this)">
+                <a href="#" th:attr="data-folder=${folder.name}" class="btn-trash" onclick="moveFolderToTrash(this)">
                     <i class="fas fa-trash-alt"></i> Mover para a Lixeira
                 </a>
             </div>
@@ -184,6 +184,12 @@
             });
         }
     }
+    function toggleActions(element) {
+    // Aqui você pode definir a lógica que deseja para mostrar ou ocultar o menu suspenso
+    const dropdown = element.nextElementSibling;
+    // Alterna a visibilidade do menu suspenso
+    dropdown.style.display = (dropdown.style.display === 'none' || dropdown.style.display === '') ? 'block' : 'none';
+}
 </script>
 
 </body>

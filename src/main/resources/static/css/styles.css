@@ -236,6 +236,9 @@ body {
     color: white; /* Ícone branco no hover */
     background-color: #a9a9a9; /* Fundo amarelo no hover */
 }
+.btn-share {
+    text-decoration: none;  /* Remover decoração do texto no link */
+}
 
 .btn-share i {
     color: #d32f2f; /* Vermelho */
@@ -246,6 +249,7 @@ body {
     border: none; /* Removendo a borda */
     outline: none; /* Removendo o contorno */
     font-size: 16px; /* Reduzindo o tamanho do ícone */
+    text-decoration: none;
 }
 
 .btn-share:hover i {
@@ -355,7 +359,7 @@ button, .btn {
 }
 
 /* Botão Compartilhar verde */
-.btn-share {
+/*.btn-share {
 
     border: none;
     color: white;
@@ -365,7 +369,7 @@ button, .btn {
 .btn-share:hover {
     background-color: #218838;
 }
-
+*/
 /* Botão Flutuante */
 .btn-flutuante {
     position: fixed;
@@ -455,6 +459,29 @@ button, .btn {
 
 .btn-criar:hover {
     background-color: #1558b0;
+}
+/* Remover a decoração do link da lixeira */
+.btn-trash {
+    text-decoration: none;  /* Remove o underline */
+}
+
+/* Estilos para o ícone da lixeira */
+.btn-trash i.fas.fa-trash-alt {
+    color: #d32f2f; /* Cor vermelha para o ícone */
+    background: none;
+    padding: 6px; /* Ajuste do tamanho do ícone */
+    border-radius: 4px; /* Bordas arredondadas */
+    transition: color 0.3s ease, background-color 0.3s ease;
+    border: none; /* Remove a borda */
+    outline: none; /* Remove o contorno */
+    font-size: 16px; /* Ajuste no tamanho do ícone */
+    text-decoration: none; /* Remove a decoração de texto */
+}
+
+/* Hover no ícone da lixeira */
+.btn-trash:hover i.fas.fa-trash-alt {
+    color: white; /* Cor do ícone fica branca no hover */
+    background-color: #d32f2f; /* Fundo vermelho no hover */
 }
 
 /* Responsivo */
