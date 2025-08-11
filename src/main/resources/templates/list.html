@@ -131,6 +131,29 @@
         </div>
     </div>
 </div>
+<!-- Modal de Confirmação de Exclusão -->
+<div class="modal fade modal-confirmacao-exclusao" id="modalConfirmacaoExclusao" tabindex="-1" aria-labelledby="modalConfirmacaoExclusaoLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header bg-danger text-white">
+                <h5 class="modal-title" id="modalConfirmacaoExclusaoLabel">Confirmar Exclusão</h5>
+                <!-- Apenas o botão de fechar do Bootstrap (não adicionar FontAwesome) -->
+                 <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Fechar"></button>
+            </div>
+            <div class="modal-body">
+                <p id="confirmMessage">Tem certeza que deseja excluir o arquivo <span id="modalFileName">Nome do Arquivo Exemplo Muito Longo Para Quebrar Linha Adequadamente</span>?</p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                <button type="button" class="btn btn-danger" id="confirmDeleteBtn">Excluir</button>
+            </div>
+        </div>
+    </div>
+</div>
+<div id="progressBar" style="display: none;">
+    <div id="progressFill"></div>
+</div>
+
 
 <!-- Rodapé -->
 <div class="footer">
@@ -140,29 +163,45 @@
 <script src="/js/list.js"></script>
 <script>
     function moveToTrash(button) {
-        const filePath = button.getAttribute('data-path'); // Aqui você vai pegar o path do arquivo ou pasta
-        if (confirm(`Tem certeza que deseja mover ${filePath} para a Lixeira?`)) {
-            fetch('/storage/delete', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'  // Mudança para JSON
-                },
-                body: JSON.stringify({ path: filePath })  // Envia o caminho como JSON
-            })
-            .then(response => response.json())
-            .then(data => {
-                if (data.message) {
-                    alert(data.message); // Exibe a mensagem de sucesso
-                    location.reload();  // Recarrega a página
-                } else if (data.error) {
-                    alert(data.error);  // Exibe erro
-                }
-            })
-            .catch(error => {
-                alert('Erro ao mover para a lixeira: ' + error);  // Exibe erro se a requisição falhar
-            });
-        }
-    }
+    const filePath = button.getAttribute('data-path'); // Pega o caminho do arquivo
+    const fileName = filePath.substring(filePath.lastIndexOf('/') + 1); // Extraí o nome do arquivo
+
+    // Exibe uma mensagem de confirmação dependendo se é arquivo
+    document.getElementById('confirmMessage').innerHTML =
+        `Tem certeza que deseja mover o arquivo <span id="modalFileName">${fileName}</span> para a Lixeira?`;
+
+    // Abre o modal
+    const modal = new bootstrap.Modal(document.getElementById('modalConfirmacaoExclusao'));
+    modal.show();
+
+    // Quando o usuário confirmar a exclusão
+    document.getElementById('confirmDeleteBtn').onclick = function() {
+        fetch('/storage/delete', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ path: filePath })  // Envia o caminho como JSON
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.message) {
+                alert(data.message); // Exibe a mensagem de sucesso
+                location.reload();  // Recarrega a página
+            } else if (data.error) {
+                alert(data.error);  // Exibe erro
+            }
+        })
+        .catch(error => {
+            alert('Erro ao mover para a lixeira: ' + error);  // Exibe erro se a requisição falhar
+        });
+
+        // Fecha o modal após confirmação
+        modal.hide();
+    };
+}
+
+
 
     function moveFolderToTrash(button) {
         const folderName = button.getAttribute('data-folder');

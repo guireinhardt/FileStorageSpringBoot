@@ -483,6 +483,52 @@ button, .btn {
     color: white; /* Cor do ícone fica branca no hover */
     background-color: #d32f2f; /* Fundo vermelho no hover */
 }
+/* Estilos específicos para o modal de confirmação */
+.modal-confirmacao-exclusao .modal-content {
+    max-width: 500px; /* Limita a largura do modal */
+    word-wrap: break-word; /* Permite a quebra de linha */
+}
+
+.modal-confirmacao-exclusao .modal-body {
+    word-wrap: break-word; /* Garante a quebra de linha dentro do corpo do modal */
+    white-space: normal; /* Permite quebra de linha no conteúdo */
+    word-break: break-word; /* Garante que palavras longas sejam quebradas */
+    overflow-wrap: break-word; /* Compatível com navegadores modernos */
+}
+
+/* Se você deseja limitar a largura do nome do arquivo e aplicar a quebra de linha */
+.modal-confirmacao-exclusao #modalFileName {
+    max-width: 100%; /* Garante que o nome do arquivo ocupe toda a largura disponível */
+    word-wrap: break-word; /* Quebra a linha em palavras longas */
+    overflow-wrap: break-word; /* Garante que palavras longas se quebrem */
+    display: block; /* Se necessário */
+    white-space: normal; /* Permite a quebra de linha */
+}
+
+/* Estilo do título */
+.modal-confirmacao-exclusao .modal-header {
+    background-color: #f8f9fa; /* Cor do fundo do cabeçalho */
+    border-bottom: 1px solid #ddd;
+    color: #333;
+}
+
+/* Estilo para o botão de fechar (X) */
+.modal-confirmacao-exclusao .btn-close {
+    background-color: transparent; /* Sem fundo */
+    border: none; /* Sem borda */
+    color: #fff; /* Cor do ícone */
+    font-size: 1.5rem; /* Tamanho do ícone */
+}
+
+/* O "btn-close" já é responsável por exibir o "X", portanto o código abaixo não é mais necessário */
+
+
+/* Caso queira garantir que o ícone "X" tenha a cor correta */
+.modal-confirmacao-exclusao .btn-close-white {
+    color: white; /* Cor branca para o X */
+}
+
+
 
 /* Responsivo */
 @media (max-width: 768px) {

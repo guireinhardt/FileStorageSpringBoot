@@ -558,7 +558,7 @@ public class FileStorageController {
     public ResponseEntity<?> restoreFileFromTrash(@RequestParam String filePath) {
         try {
             fileStorageService.restoreFileFromTrash(filePath);  // Serviço que move o arquivo de volta para o local original
-            return ResponseEntity.ok("Arquivo restaurado com sucesso!");
+            return ResponseEntity.ok().build();
         } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                     .body("Erro ao restaurar arquivo: " + e.getMessage());
@@ -592,7 +592,7 @@ public class FileStorageController {
     public ResponseEntity<?> deleteFolderFromTrash(@RequestParam String folderPath) {
         try {
             fileStorageService.deleteFolderFromTrash(folderPath);  // Serviço que exclui a pasta permanentemente
-            return ResponseEntity.ok("Pasta deletada permanentemente!");
+            return ResponseEntity.ok().build();
         } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                     .body("Erro ao deletar pasta: " + e.getMessage());
