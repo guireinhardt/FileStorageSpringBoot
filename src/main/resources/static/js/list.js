@@ -163,68 +163,137 @@ document.addEventListener('DOMContentLoaded', function () {
     });
 
     // Mover pasta
-    let folderToMove = "";
-    let currentFolderPath = "";
+       /*  let folderToMove = "";
+        let currentFolderPath = "";
 
-    window.moveFolder = function (link) {
-        folderToMove = link.getAttribute("data-folder");
-        currentFolderPath = document.getElementById("folderPath").value;
+        window.moveFolder = function (link) {
+            folderToMove = link.getAttribute("data-folder");
+            currentFolderPath = document.getElementById("folderPath").value;
 
-        document.getElementById("modalFolderName").innerText = folderToMove;
+            document.getElementById("modalFolderName").innerText = folderToMove;
 
-        const select = document.getElementById("destinationSelect");
-        select.innerHTML = "";
+            const select = document.getElementById("destinationSelect");
+            select.innerHTML = "";
 
-        availableFolders
-            .filter(folder => folder !== folderToMove)
-            .forEach(folder => {
-                const option = document.createElement("option");
-                option.value = folder;
-                option.textContent = folder;
-                select.appendChild(option);
+            availableFolders
+                .filter(folder => folder !== folderToMove)
+                .forEach(folder => {
+                    const option = document.createElement("option");
+                    option.value = folder;
+                    option.textContent = folder;
+                    select.appendChild(option);
+                });
+
+            const modal = new bootstrap.Modal(document.getElementById("moveModal"));
+            modal.show();
+        };
+
+        window.confirmMove = function () {
+            const targetFolder = document.getElementById("destinationSelect").value;
+            const fullPath = `${currentFolderPath}/${folderToMove}`;
+
+            fetch(`/storage/moveFolder?fullPath=${encodeURIComponent(fullPath)}&newParentFolder=${encodeURIComponent(targetFolder)}`, {
+                method: "PATCH"
+            })
+            .then(res => {
+                if (!res.ok) throw new Error("Erro ao mover pasta");
+                return res.text();
+            })
+            .then(() => {
+                alert("Pasta movida com sucesso!");
+                location.reload();
+            })
+            .catch(err => {
+                console.error("Erro:", err);
+                alert("Erro inesperado.");
             });
+        };
 
-        const modal = new bootstrap.Modal(document.getElementById("moveModal"));
-        modal.show();
-    };
-
-    window.confirmMove = function () {
-        const targetFolder = document.getElementById("destinationSelect").value;
-        const fullPath = `${currentFolderPath}/${folderToMove}`;
-
-        fetch(`/storage/moveFolder?fullPath=${encodeURIComponent(fullPath)}&newParentFolder=${encodeURIComponent(targetFolder)}`, {
-            method: "PATCH"
-        })
-        .then(res => {
-            if (!res.ok) throw new Error("Erro ao mover pasta");
-            return res.text();
-        })
-        .then(() => {
-            alert("Pasta movida com sucesso!");
-            location.reload();
-        })
-        .catch(err => {
-            console.error("Erro:", err);
-            alert("Erro inesperado.");
-        });
-    };
-
-    // Dropdown ações de pasta
-    window.toggleActions = function (icon) {
-        const dropdown = icon.nextElementSibling;
-        document.querySelectorAll(".dropdown-content").forEach(menu => {
-            if (menu !== dropdown) menu.style.display = "none";
-        });
-        dropdown.style.display = dropdown.style.display === "block" ? "none" : "block";
-    };
-
-    document.addEventListener("click", function (event) {
-        if (!event.target.closest(".folder")) {
+        // Dropdown ações de pasta
+        window.toggleActions = function (icon) {
+            const dropdown = icon.nextElementSibling;
             document.querySelectorAll(".dropdown-content").forEach(menu => {
-                menu.style.display = "none";
+                if (menu !== dropdown) menu.style.display = "none";
             });
-        }
-    });
+            dropdown.style.display = dropdown.style.display === "block" ? "none" : "block";
+        };
+
+        document.addEventListener("click", function (event) {
+            if (!event.target.closest(".folder")) {
+                document.querySelectorAll(".dropdown-content").forEach(menu => {
+                    menu.style.display = "none";
+                });
+            }
+        }); */
+      let folderToMove = "";       // Pasta que será movida
+      let currentFolderPath = "";  // Caminho atual da pasta (se houver)
+
+      // Função para abrir o modal e preencher o select com pastas disponíveis
+      window.moveFolder = function(link) {
+          folderToMove = link.getAttribute("data-folder");
+          currentFolderPath = document.getElementById("folderPath") ? document.getElementById("folderPath").value : "";
+
+          document.getElementById("modalFolderName").innerText = folderToMove;
+
+          const select = document.getElementById("destinationSelect");
+          select.innerHTML = ""; // Limpa opções
+
+          // Pega todas as pastas exibidas na tela
+          document.querySelectorAll(".folder .folder-name").forEach(el => {
+              const folderName = el.innerText.trim();
+              if (folderName !== folderToMove && folderName.toLowerCase() !== "lixeira") {
+                  const option = document.createElement("option");
+                  option.value = folderName;
+                  option.textContent = folderName;
+                  select.appendChild(option);
+              }
+          });
+
+          // Mostra o modal
+          const modal = new bootstrap.Modal(document.getElementById("moveModal"));
+          modal.show();
+      };
+
+      // Função para confirmar movimentação da pasta
+      window.confirmMove = function() {
+          const targetFolder = document.getElementById("destinationSelect").value;
+          if (!targetFolder) {
+              alert("Selecione uma pasta de destino.");
+              return;
+          }
+
+          const fullPath = currentFolderPath ? `${currentFolderPath}/${folderToMove}` : folderToMove;
+
+          fetch(`/storage/moveFolder?fullPath=${encodeURIComponent(fullPath)}&newParentFolder=${encodeURIComponent(targetFolder)}`, {
+              method: "PATCH"
+          })
+          .then(res => {
+              if (!res.ok) throw new Error("Erro ao mover pasta");
+              return res.text();
+          })
+          .then(() => {
+              alert("Pasta movida com sucesso!");
+              location.reload(); // Recarrega a página para refletir a mudança
+          })
+          .catch(err => {
+              console.error("Erro:", err);
+              alert("Erro inesperado ao mover pasta.");
+          });
+      };
+
+      // Função opcional para abrir/fechar dropdown das ações
+      function toggleActions(el) {
+          const dropdown = el.nextElementSibling;
+          dropdown.style.display = dropdown.style.display === "block" ? "none" : "block";
+
+          document.addEventListener("click", function hideDropdown(event) {
+              if (!el.contains(event.target) && !dropdown.contains(event.target)) {
+                  dropdown.style.display = "none";
+                  document.removeEventListener("click", hideDropdown);
+              }
+          });
+      }
+
 
     // Download pasta
     window.handleDownload = function (element) {

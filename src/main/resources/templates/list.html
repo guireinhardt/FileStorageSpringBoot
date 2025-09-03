@@ -50,6 +50,7 @@
     <!--h2 th:text="'Pasta: ' + ${currentFolder}"></h2 -->
 
     <!-- Pastas -->
+    <!-- Pastas -->
     <h2>Pastas</h2>
     <div class="folder-grid">
         <div th:each="folder : ${folders}" class="folder" style="position: relative;">
@@ -60,6 +61,7 @@
             <i class="fas fa-ellipsis-v ellipsis-icon" onclick="toggleActions(this)"></i>
             <div class="dropdown-content" style="display: none; position: absolute; right: 5px; top: 25px; background-color: white; border: 1px solid #ccc; z-index: 100;">
                 <a href="#" th:attr="data-folder=${folder.name}" onclick="moveFolder(this)">Mover pasta</a>
+
                 <a href="#" th:attr="data-folder-name=${folder.name}" onclick="handleDownload(this)">
                     <i class="fas fa-download"></i> Baixar pasta
                 </a>
@@ -69,6 +71,7 @@
             </div>
         </div>
     </div>
+
 
     <!-- Arquivos -->
     <h2>Arquivos</h2>
@@ -150,6 +153,46 @@
         </div>
     </div>
 </div>
+<div class="modal fade" id="modalRenameFile" tabindex="-1" aria-labelledby="modalRenameFileLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="modalRenameFileLabel">Renomear Arquivo</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fechar"></button>
+            </div>
+            <div class="modal-body">
+                <form id="renameForm">
+                    <input type="hidden" id="oldFileName" name="oldFileName">
+                    <input type="text" id="newFileName" name="newFileName" class="form-control" required>
+                    <button type="submit" class="btn btn-primary">Renomear</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+<!-- Modal de Mover Pasta -->
+<div class="modal fade" id="moveModal" tabindex="-1" aria-labelledby="moveModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header bg-dark text-white">
+                <h5 class="modal-title" id="moveModalLabel">Mover pasta: <span id="modalFolderName"></span></h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Fechar"></button>
+            </div>
+            <div class="modal-body">
+                <label for="destinationSelect" class="form-label">Mover para:</label>
+                <select id="destinationSelect" class="form-select">
+                    <!-- opções serão preenchidas dinamicamente -->
+                </select>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                <button type="button" class="btn btn-success" onclick="confirmMove()">Mover</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+
 <div id="progressBar" style="display: none;">
     <div id="progressFill"></div>
 </div>
@@ -160,7 +203,7 @@
     &copy; 2025 MeuDrive - Todos os direitos reservados
 </div>
 
-<script src="/js/list.js"></script>
+
 <script>
     function moveToTrash(button) {
     const filePath = button.getAttribute('data-path'); // Pega o caminho do arquivo
@@ -230,6 +273,6 @@
     dropdown.style.display = (dropdown.style.display === 'none' || dropdown.style.display === '') ? 'block' : 'none';
 }
 </script>
-
+<script src="/js/list.js"></script>
 </body>
 </html>

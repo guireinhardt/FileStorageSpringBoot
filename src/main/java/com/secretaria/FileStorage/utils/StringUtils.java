@@ -11,6 +11,10 @@ public class StringUtils {
         normalized = normalized.replaceAll("[^\\p{IsAlphabetic}\\p{IsDigit} ]", "");  // remove símbolos (opcional)
         return normalized.toLowerCase().trim();
     }
+    // Método para comparação flexível
+    public static boolean isEqual(String str1, String str2) {
+        return normalize(str1).equals(normalize(str2));
+    }
 }
 
 

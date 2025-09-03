@@ -216,6 +216,14 @@ public class FileViewController {
 
         // Se houver filtros, realiza a busca de arquivos
         if (hasFilters) {
+            // Modifica os subkeywords para substituir os espaços por underscores antes da busca
+            if (subkeywords != null) {
+                subkeywords = subkeywords.stream()
+                        .map(s -> s.replace(" ", "_").toUpperCase()) // Substitui espaços por underscores e coloca tudo em maiúsculas
+                        .collect(Collectors.toList());
+            }
+
+            // Realiza a busca no serviço, passando os subkeywords já modificados
             results = fileSearchService.searchFiles(query, keyword, subkeywords, institute, city, startDate, endDate);
         }
 

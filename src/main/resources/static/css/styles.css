@@ -1,6 +1,7 @@
 /* Estilos Globais */
+
 body {
-    font-family: 'Segoe UI', sans-serif;
+    font-family: 'Inter', sans-serif;
     background: #f8f9fa;
     margin: 0;
     display: flex;
@@ -15,7 +16,7 @@ body {
 
 /* Navbar */
 .navbar {
-    background-color: #1B5E20;
+    background-color: #3F460D;
     display: flex;
     align-items: center;
     padding: 0.5rem 1rem;
