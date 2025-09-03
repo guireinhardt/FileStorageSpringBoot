@@ -225,10 +225,10 @@ document.addEventListener('DOMContentLoaded', function () {
                 });
             }
         }); */
-      let folderToMove = "";       // Pasta que será movida
-      let currentFolderPath = "";  // Caminho atual da pasta (se houver)
+      let folderToMove = ""; // Pasta que será movida
+      let currentFolderPath = ""; // Caminho atual da pasta (se houver)
 
-      // Função para abrir o modal e preencher o select com pastas disponíveis
+      // Função para abrir o modal e preencher o select com pastas e subpastas disponíveis
       window.moveFolder = function(link) {
           folderToMove = link.getAttribute("data-folder");
           currentFolderPath = document.getElementById("folderPath") ? document.getElementById("folderPath").value : "";
@@ -238,16 +238,52 @@ document.addEventListener('DOMContentLoaded', function () {
           const select = document.getElementById("destinationSelect");
           select.innerHTML = ""; // Limpa opções
 
-          // Pega todas as pastas exibidas na tela
-          document.querySelectorAll(".folder .folder-name").forEach(el => {
-              const folderName = el.innerText.trim();
-              if (folderName !== folderToMove && folderName.toLowerCase() !== "lixeira") {
-                  const option = document.createElement("option");
-                  option.value = folderName;
-                  option.textContent = folderName;
-                  select.appendChild(option);
-              }
-          });
+          // Requisição para pegar todas as pastas
+          fetch('/storage/folders')
+              .then(res => res.json())
+              .then(folders => {
+                  const folderMap = {};
+
+                  // Organiza pastas em uma estrutura hierárquica
+                  folders.forEach(folder => {
+                      const parts = folder.split('/');
+                      let current = folderMap;
+                      parts.forEach((part, idx) => {
+                          if (!current[part]) {
+                              current[part] = idx === parts.length - 1 ? null : {};
+                          }
+                          current = current[part];
+                      });
+                  });
+
+                  // Função recursiva para adicionar pastas e subpastas no select
+                  const addFolderToSelect = (parent, parentPath = '', depth = 0) => {
+                      Object.keys(parent).forEach(folder => {
+                          const path = parentPath ? `${parentPath}/${folder}` : folder;
+                          if (folder !== folderToMove && folder.toLowerCase() !== "lixeira") {
+                              const option = document.createElement("option");
+                              option.value = path;
+
+                              // Define a tabulação para as subpastas
+                              option.style.paddingLeft = `${depth * 20}px`; // 20px para cada nível de profundidade
+
+                              // Nome da pasta (indica se é subpasta com base na indentação)
+                              option.textContent = folder;
+
+                              select.appendChild(option);
+                          }
+
+                          // Se for uma subpasta, chama a função recursiva
+                          if (parent[folder]) {
+                              addFolderToSelect(parent[folder], path, depth + 1);
+                          }
+                      });
+                  };
+
+                  // Inicia o processo de adicionar pastas e subpastas ao select
+                  addFolderToSelect(folderMap);
+              })
+              .catch(err => console.error("Erro ao carregar pastas:", err));
 
           // Mostra o modal
           const modal = new bootstrap.Modal(document.getElementById("moveModal"));
@@ -280,6 +316,9 @@ document.addEventListener('DOMContentLoaded', function () {
               alert("Erro inesperado ao mover pasta.");
           });
       };
+
+
+
 
       // Função opcional para abrir/fechar dropdown das ações
       function toggleActions(el) {
