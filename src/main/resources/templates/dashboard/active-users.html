@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard de Usuários Ativos</title>
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@3.7.0/dist/chart.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-luxon@1.0.0/dist/chartjs-adapter-luxon.bundle.min.js"></script>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        h1, h2 { color: #333; }
+        form { margin-bottom: 20px; }
+        label { margin-right: 10px; }
+        select { margin-right: 10px; padding: 4px; }
+        button { padding: 5px 10px; }
+        .total-users { font-size: 1.2em; margin-bottom: 20px; }
+        canvas { max-width: 100%; height: 400px; }
+    </style>
+</head>
+<body>
+
+<h1>Dashboard de Usuários Ativos</h1>
+
+<!-- Total de usuários ativos -->
+<p class="total-users">
+    Total de usuários ativos no período selecionado: <strong th:text="${totalActiveUsers}"></strong>
+</p>
+
+<!-- Formulário de filtro de período -->
+<form method="get" action="/dashboard/active-users">
+    <label for="period">Período:</label>
+    <select id="period" name="period">
+        <option value="7" th:selected="${period == 7}">Últimos 7 dias</option>
+        <option value="30" th:selected="${period == 30}">Últimos 30 dias</option>
+        <option value="60" th:selected="${period == 60}">Últimos 60 dias</option>
+        <option value="90" th:selected="${period == 90}">Últimos 90 dias</option>
+    </select>
+    <button type="submit">Filtrar</button>
+</form>
+
+<!-- Gráfico de novos usuários ativos por dia -->
+<div>
+    <h2>Novos Usuários Ativos por Dia</h2>
+    <canvas id="activeUsersChart"></canvas>
+</div>
+
+<script>
+    // Dados passados pelo Thymeleaf
+    var dailyUsers = [[${dailyUsers}]];
+
+    // Extrair datas e contagens
+    var labels = dailyUsers.map(e => e.date);
+    var data = dailyUsers.map(e => e.count);
+
+    // Configuração do gráfico
+    var ctx = document.getElementById('activeUsersChart').getContext('2d');
+    var activeUsersChart = new Chart(ctx, {
+        type: 'line',
+        data: {
+            labels: labels,
+            datasets: [{
+                label: 'Novos Usuários Ativos',
+                data: data,
+                borderColor: 'rgba(54, 162, 235, 1)',
+                backgroundColor: 'rgba(54, 162, 235, 0.2)',
+                fill: true,
+                tension: 0.3
+            }]
+        },
+        options: {
+            responsive: true,
+            plugins: {
+                legend: { display: true },
+                tooltip: { mode: 'index', intersect: false }
+            },
+            scales: {
+                x: {
+                    type: 'time',
+                    time: { unit: 'day', tooltipFormat: 'dd/MM/yyyy' },
+                    title: { display: true, text: 'Data' }
+                },
+                y: {
+                    beginAtZero: true,
+                    title: { display: true, text: 'Quantidade de Usuários' }
+                }
+            }
+        }
+    });
+</script>
+
+</body>
+</html>

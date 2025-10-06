@@ -558,12 +558,16 @@ public class FileStorageController {
     public ResponseEntity<?> restoreFileFromTrash(@RequestParam String filePath) {
         try {
             fileStorageService.restoreFileFromTrash(filePath);  // Serviço que move o arquivo de volta para o local original
-            return ResponseEntity.ok().build();
+            // Retorna uma resposta simples em formato de String
+            return ResponseEntity.ok("{\"status\": \"success\", \"message\": \"Arquivo restaurado com sucesso!\"}");
         } catch (Exception e) {
+            // Retorna uma resposta de erro
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                    .body("Erro ao restaurar arquivo: " + e.getMessage());
+                    .body("{\"status\": \"error\", \"message\": \"Erro ao restaurar arquivo: " + e.getMessage() + "\"}");
         }
     }
+
+
 
     @PostMapping("/restoreFolderFromTrash")
     public ResponseEntity<?> restoreFolderFromTrash(@RequestParam String folderPath) {

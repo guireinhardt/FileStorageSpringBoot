@@ -8,6 +8,7 @@ import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.hibernate.validator.constraints.br.CPF;
 
+import java.time.LocalDateTime;
 import java.util.Collection;
 import java.util.List;
 
@@ -38,6 +39,9 @@ public class UsersEntity implements UserDetails {
     private UsersRole role;
     @Column(nullable = false)
     private boolean enabled = true;
+    @Column(nullable = false, updatable = false)
+    private LocalDateTime createdAt = LocalDateTime.now();
+
 
 
     public void setEnabled(boolean enabled) {
@@ -134,6 +138,14 @@ public class UsersEntity implements UserDetails {
 
     public UsersRole getRole(){
         return role;
+    }
+
+    public LocalDateTime getCreatedAt() {
+        return createdAt;
+    }
+
+    public void setCreatedAt(LocalDateTime createdAt) {
+        this.createdAt = createdAt;
     }
 
 

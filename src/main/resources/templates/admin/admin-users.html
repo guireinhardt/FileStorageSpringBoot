@@ -1,10 +1,10 @@
 <!DOCTYPE html>
-<html xmlns:th="http://www.thymeleaf.org">
+<html xmlns:th="http://www.thymeleaf.org" xmlns:sec="http://www.thymeleaf.org/thymeleaf-extras-springsecurity5">
 <head>
     <meta charset="UTF-8">
     <title>Administração de Usuários</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link rel="stylesheet" href="/css/folders.css">
+    <link rel="stylesheet" href="/css/adminUsers.css">
 </head>
 <body>
 <!-- Navbar -->
@@ -37,9 +37,39 @@
         </div>
     </div>
 </div>
+
 <div class="container mt-5">
     <h1 class="mb-4">Administração de Usuários</h1>
+    <p> teste123</p>
+    <!-- Resumo de Usuários -->
+    <div class="row mb-4">
+        <div class="col-md-4">
+            <div class="card bg-info text-white">
+                <div class="card-body">
+                    <h5 class="card-title">Total de Usuários</h5>
+                    <p class="card-text" th:text="${totalUsers}"></p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card bg-success text-white">
+                <div class="card-body">
+                    <h5 class="card-title">Usuários Ativos</h5>
+                    <p class="card-text" th:text="${activeUsersCount}"></p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card bg-danger text-white">
+                <div class="card-body">
+                    <h5 class="card-title">Usuários Inativos</h5>
+                    <p class="card-text" th:text="${inactiveUsersCount}"></p>
+                </div>
+            </div>
+        </div>
+    </div>
 
+    <!-- Tabela de usuários -->
     <table class="table table-striped table-bordered">
         <thead class="table-dark">
         <tr>
@@ -84,5 +114,29 @@
 
     <a href="/" class="btn btn-secondary">Voltar</a>
 </div>
+<script>
+    document.addEventListener("DOMContentLoaded", function() {
+        const userIcon = document.querySelector(".user-icon");
+        const dropdownMenu = document.getElementById("dropdownMenu");
+
+        userIcon.addEventListener("click", function() {
+            // Alternar a visibilidade do dropdown
+            if (dropdownMenu.style.display === "none" || dropdownMenu.style.display === "") {
+                dropdownMenu.style.display = "block";
+            } else {
+                dropdownMenu.style.display = "none";
+            }
+        });
+
+        // Fechar o dropdown se o usuário clicar fora do menu
+        window.addEventListener("click", function(event) {
+            if (!userIcon.contains(event.target) && !dropdownMenu.contains(event.target)) {
+                dropdownMenu.style.display = "none";
+            }
+        });
+    });
+</script>
+
 </body>
+
 </html>
