@@ -40,7 +40,7 @@
 
 <div class="container mt-5">
     <h1 class="mb-4">Administração de Usuários</h1>
-    <p> teste123</p>
+
     <!-- Resumo de Usuários -->
     <div class="row mb-4">
         <div class="col-md-4">
@@ -69,7 +69,7 @@
         </div>
     </div>
 
-    <!-- Tabela de usuários -->
+                    <!-- Tabela de usuários -->
     <table class="table table-striped table-bordered">
         <thead class="table-dark">
         <tr>
@@ -87,22 +87,12 @@
             <td th:text="${user.role}"></td>
             <td th:text="${user.enabled} ? 'Ativo' : 'Desabilitado'"></td>
             <td>
-                <!-- Alterar Role -->
-                <form th:action="@{'/auth/admin/users/' + ${user.id} + '/change-role'}" method="post" style="display:inline;">
-                    <select name="newRole" class="form-select form-select-sm d-inline w-auto">
-                        <option value="ADMIN">ADMIN</option>
-                        <option value="USERS">USERS</option>
-                        <option value="PUBLICO">PUBLICO</option>
-                    </select>
-                    <button type="submit" class="btn btn-sm btn-primary">Alterar</button>
-                </form>
+                <a th:href="@{'/auth/admin/users/' + ${user.id} + '/details-edit'}" class="btn btn-sm btn-info">Editar</a>
 
-                <!-- Excluir -->
                 <form th:action="@{'/auth/admin/users/' + ${user.id} + '/delete'}" method="post" style="display:inline;" onsubmit="return confirm('Tem certeza que deseja excluir?');">
                     <button type="submit" class="btn btn-sm btn-danger">Excluir</button>
                 </form>
 
-                <!-- Ativar/Desativar -->
                 <form th:action="@{'/auth/admin/users/' + ${user.id} + '/toggle-status'}" method="post" style="display:inline;">
                     <button type="submit" class="btn btn-sm" th:classappend="${user.enabled} ? 'btn-warning' : 'btn-success'"
                             th:text="${user.enabled} ? 'Desativar' : 'Ativar'"></button>
@@ -114,29 +104,68 @@
 
     <a href="/" class="btn btn-secondary">Voltar</a>
 </div>
+<!-- Botão para abrir o modal -->
+<button class="btn btn-info mb-3" data-bs-toggle="modal" data-bs-target="#exportModal">Exportar Dados</button>
+
+<!-- Modal -->
+<div class="modal fade" id="exportModal" tabindex="-1" aria-labelledby="exportModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Filtros para Exportação</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div class="row mb-3">
+                    <div class="col-md-6">
+                        <label for="statusFilter">Status:</label>
+                        <select id="statusFilter" class="form-control">
+                            <option value="all">Todos</option>
+                            <option value="true">Ativos</option>
+                            <option value="false">Inativos</option>
+                        </select>
+                    </div>
+                    <div class="col-md-6">
+                        <label for="roleFilter">Role:</label>
+                        <select id="roleFilter" class="form-control">
+                            <option value="all">Todos</option>
+                            <option value="ADMIN">ADMIN</option>
+                            <option value="USERS">USERS</option>
+                            <option value="PUBLICO">PUBLICO</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="mb-3">
+                    <label>Formato:</label><br>
+                    <input type="radio" name="format" value="pdf" checked> PDF
+                    <input type="radio" name="format" value="csv"> CSV
+                </div>
+
+                <div class="text-center">
+                    <button type="button" class="btn btn-primary" id="btnExport">Exportar</button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
 <script>
-    document.addEventListener("DOMContentLoaded", function() {
-        const userIcon = document.querySelector(".user-icon");
-        const dropdownMenu = document.getElementById("dropdownMenu");
+    document.getElementById("btnExport").addEventListener("click", function() {
+        const status = document.getElementById("statusFilter").value;
+        const role = document.getElementById("roleFilter").value;
+        const format = document.querySelector('input[name="format"]:checked').value;
 
-        userIcon.addEventListener("click", function() {
-            // Alternar a visibilidade do dropdown
-            if (dropdownMenu.style.display === "none" || dropdownMenu.style.display === "") {
-                dropdownMenu.style.display = "block";
-            } else {
-                dropdownMenu.style.display = "none";
-            }
-        });
+        // Monta a URL correta
+        let url = `/auth/admin/export/${format}?status=${status}&role=${role}`;
 
-        // Fechar o dropdown se o usuário clicar fora do menu
-        window.addEventListener("click", function(event) {
-            if (!userIcon.contains(event.target) && !dropdownMenu.contains(event.target)) {
-                dropdownMenu.style.display = "none";
-            }
-        });
+        // Abre em nova aba para download
+        window.open(url, "_blank");
     });
 </script>
 
-</body>
+<script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.11.6/dist/umd/popper.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.min.js"></script>
 
+</body>
 </html>

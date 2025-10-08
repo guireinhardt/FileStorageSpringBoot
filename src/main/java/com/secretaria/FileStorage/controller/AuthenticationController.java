@@ -1,5 +1,9 @@
     package com.secretaria.FileStorage.controller;
-
+    import com.itextpdf.text.Document;
+    import com.itextpdf.text.DocumentException;
+    import com.itextpdf.text.pdf.PdfPTable;
+    import com.itextpdf.text.pdf.PdfWriter;
+    import com.itextpdf.text.Paragraph;
     import com.secretaria.FileStorage.entity.*;
     import com.secretaria.FileStorage.infra.security.TokenService;
     import com.secretaria.FileStorage.repository.UsersRepository;
@@ -7,10 +11,9 @@
     import org.slf4j.Logger;
     import org.slf4j.LoggerFactory;
     import org.springframework.beans.factory.annotation.Autowired;
-    import org.springframework.http.HttpHeaders;
-    import org.springframework.http.HttpStatus;
-    import org.springframework.http.ResponseCookie;
-    import org.springframework.http.ResponseEntity;
+    import org.springframework.core.io.InputStreamResource;
+    import org.springframework.core.io.Resource;
+    import org.springframework.http.*;
     import org.springframework.security.access.prepost.PreAuthorize;
     import org.springframework.security.authentication.AuthenticationManager;
     import org.springframework.security.authentication.BadCredentialsException;
@@ -25,6 +28,8 @@
     import org.springframework.validation.annotation.Validated;
     import org.springframework.web.bind.annotation.*;
 
+    import java.io.ByteArrayInputStream;
+    import java.io.ByteArrayOutputStream;
     import java.util.Arrays;
     import java.util.HashMap;
     import java.util.List;
@@ -329,15 +334,107 @@
             return "redirect:/auth/admin/users/" + id + "/details-edit?success=true"; // Redireciona após sucesso
         }
 
+        // Exportando os arquivos
+        // Exportando os arquivos
+        @PreAuthorize("hasRole('ADMIN')")
+        @GetMapping("/admin/export/{format}")
+        public ResponseEntity<Resource> exportData(@RequestParam(required = false) String role,
+                                                   @RequestParam(required = false) String status,
+                                                   @PathVariable String format,
+                                                   Model model) throws DocumentException {
+
+            // Ajustar os valores de role e status
+            if (role == null || role.equals("all")) {
+                role = "all";  // Se role for null ou 'all', aplica todos os usuários
+            }
+
+            if (status == null || status.equals("all")) {
+                status = null;  // Se status for 'all' ou null, busca todos os status
+            }
+
+            // Exemplo genérico de lista de usuários, você pode passar qualquer lista aqui
+            List<UsersEntity> users = repository.findAll();  // Obter todos os usuários (ou com filtros)
+
+            // Filtros aplicados
+            if (!role.equals("all")) {
+                users = repository.findByRole(role); // Filtro por role
+            }
+            if (status != null) {
+                boolean isActive = Boolean.parseBoolean(status);
+                users = repository.findByEnabled(isActive); // Filtro por status
+            }
+
+            if ("csv".equalsIgnoreCase(format)) {
+                return exportToCSV(users);  // Exportar para CSV
+            } else if ("pdf".equalsIgnoreCase(format)) {
+                return exportToPDF(users);  // Exportar para PDF
+            } else {
+                return ResponseEntity.badRequest().build();  // Caso o formato não seja reconhecido
+            }
+        }
 
 
+        private ResponseEntity<Resource> exportToCSV(List<UsersEntity> users) {
+            // Criar conteúdo CSV
+            String csvContent = "Nome,Username,Role,Status\n";
+            for (UsersEntity user : users) {
+                csvContent += user.getNome() + "," + user.getUsername() + "," + user.getRole() + "," + (user.isEnabled() ? "Ativo" : "Desabilitado") + "\n";
+            }
 
+            // Criar o arquivo CSV
+            InputStreamResource resource = new InputStreamResource(new ByteArrayInputStream(csvContent.getBytes()));
+            return ResponseEntity.ok()
+                    .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=usuarios.csv")
+                    .contentType(MediaType.parseMediaType("text/csv"))
+                    .body(resource);
+        }
 
+        public ResponseEntity<Resource> exportToPDF(List<UsersEntity> users) throws DocumentException {
+            // Criação do documento PDF
+            ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
+            Document document = new Document(); // Instanciando o objeto Document
+            PdfWriter.getInstance(document, outputStream); // Associa o documento ao writer que escreve no ByteArrayOutputStream
+            document.open(); // Abre o documento para começar a adicionar conteúdo
 
+            // Adiciona título no PDF
+            document.add(new Paragraph("Usuários:"));
+            document.add(new Paragraph("\n"));
 
+            // Criação de uma tabela com 4 colunas (Nome, Username, Role, Status)
+            PdfPTable table = new PdfPTable(4); // 4 colunas para os dados
+            table.setWidthPercentage(100); // Define que a tabela vai ocupar 100% da largura da página
 
+            // Adiciona cabeçalho da tabela
+            table.addCell("Nome");
+            table.addCell("Username");
+            table.addCell("Role");
+            table.addCell("Status");
 
+            // Adiciona os dados dos usuários à tabela
+            for (UsersEntity user : users) {
+                table.addCell(user.getNome()); // Nome
+                table.addCell(user.getUsername()); // Username
 
+                // Aqui, convertendo o enum para String com .toString()
+                table.addCell(user.getRole().toString()); // Role, usando .toString() para converter enum em String
+
+                table.addCell(user.isEnabled() ? "Ativo" : "Desabilitado"); // Status
+            }
+
+            // Adiciona a tabela no documento
+            document.add(table);
+
+            document.close(); // Fecha o documento após adicionar todo o conteúdo
+
+            // Cria o InputStreamResource a partir do ByteArrayOutputStream
+            InputStreamResource resource = new InputStreamResource(new ByteArrayInputStream(outputStream.toByteArray()));
+
+            // Retorna o arquivo PDF como resposta
+            return ResponseEntity.ok()
+                    .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=usuarios.pdf")
+                    .contentType(MediaType.APPLICATION_PDF)
+                    .body(resource);
+        }
 
     }
 
