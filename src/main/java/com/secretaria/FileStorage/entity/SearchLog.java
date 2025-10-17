@@ -4,6 +4,7 @@ import jakarta.persistence.*;
 import jakarta.validation.constraints.NotBlank;
 import org.hibernate.annotations.CreationTimestamp;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 
 @Entity
@@ -31,7 +32,7 @@ public class SearchLog {
 
     @Column(nullable = false)
     @CreationTimestamp
-    private LocalDateTime occurredAt;  // Data da pesquisa
+    private LocalDate occurredAt;  // Data da pesquisa
 
     @Column(nullable = false)
     @NotBlank(message = "A consulta não pode ser vazia")
@@ -72,11 +73,11 @@ public class SearchLog {
         this.subkeyword = subkeyword;
     }
 
-    public LocalDateTime getOccurredAt() {
+    public LocalDate getOccurredAt() {
         return occurredAt;
     }
 
-    public void setOccurredAt(LocalDateTime occurredAt) {
+    public void setOccurredAt(LocalDate occurredAt) {
         this.occurredAt = occurredAt;
     }
 

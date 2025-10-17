@@ -7,6 +7,7 @@ import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
@@ -19,36 +20,34 @@ public class DashboardController {
     @Autowired
     private DashboardService dashboardService;
 
-    @GetMapping("/dashboard/active-users")
-    public String getActiveUsersDashboard(@RequestParam(required = false) String period, Model model) {
-        LocalDateTime endDate = LocalDateTime.now();
+    // Rota para acessar o relatório de acessos por dia
+    @GetMapping("/dashboard/accesses-by-day")
+    public String getAccessesByDay(@RequestParam(required = false) String period, Model model) {
+        LocalDate endDate = LocalDate.now();
         int days = period != null ? Integer.parseInt(period) : 7;
-        LocalDateTime startDate = endDate.minusDays(days);
+        LocalDate startDate = endDate.minusDays(days);
 
-        // Total de usuários ativos no período
-        long totalActiveUsers = dashboardService.getActiveUsers(startDate, endDate).size();
+        // Obter o relatório de acessos por dia
+        Map<String, Long> accessesByDay = dashboardService.getAccessesByDay(startDate, endDate);
 
-        // Usuários ativos por dia
-        Map<String, Long> activeUsersByDay = dashboardService.getActiveUsersByDay(startDate, endDate);
-
-        // Converter para lista de objetos simples para Thymeleaf
-        List<DailyUserData> dailyUsers = activeUsersByDay.entrySet().stream()
-                .map(entry -> new DailyUserData(entry.getKey(), entry.getValue()))
+        // Converter os dados para uma lista de objetos simples para Thymeleaf
+        List<DailyAccessData> dailyAccessData = accessesByDay.entrySet().stream()
+                .map(entry -> new DailyAccessData(entry.getKey(), entry.getValue()))
                 .toList();
 
-        model.addAttribute("totalActiveUsers", totalActiveUsers);
-        model.addAttribute("dailyUsers", dailyUsers);
+        // Passar os dados para o modelo
+        model.addAttribute("dailyAccessData", dailyAccessData);
         model.addAttribute("period", days);
 
-        return "dashboard/active-users"; // Nome do template Thymeleaf
+        return "dashboard/accesses-by-day"; // Nome do template Thymeleaf
     }
 
-    // Classe interna para o template
-    public static class DailyUserData {
+    // Classe interna para encapsular os dados diários
+    public static class DailyAccessData {
         private String date;
         private Long count;
 
-        public DailyUserData(String date, Long count) {
+        public DailyAccessData(String date, Long count) {
             this.date = date;
             this.count = count;
         }
@@ -56,6 +55,7 @@ public class DashboardController {
         public String getDate() { return date; }
         public Long getCount() { return count; }
     }
-
-
 }
+
+
+

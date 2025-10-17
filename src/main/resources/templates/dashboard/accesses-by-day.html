@@ -1,79 +1,50 @@
 <!DOCTYPE html>
-<html lang="pt-br">
+<html xmlns:th="http://www.thymeleaf.org">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Relatório de Acessos Diários</title>
-    <script src="https://cdn.jsdelivr.net/npm/chart.js@3.7.0/dist/chart.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-luxon@1.0.0/dist/chartjs-adapter-luxon.bundle.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
 <body>
+<div class="container mt-5">
+    <h1>Relatório de Acessos por Dia</h1>
 
-<h1>Relatório de Acessos Diários</h1>
+    <p>Período: <span th:text="${period}"></span> dias</p>
 
-<!-- Formulário para filtrar por intervalo de datas -->
-<form method="get" action="/dashboard/accesses-by-day">
-    <label for="startDate">Data Início:</label>
-    <input type="datetime-local" id="startDate" name="startDate" value="${startDate}" required>
+    <!-- Canvas para o gráfico -->
+    <canvas id="accessesChart" width="400" height="200"></canvas>
 
-    <label for="endDate">Data Fim:</label>
-    <input type="datetime-local" id="endDate" name="endDate" value="${endDate}" required>
+    <script th:inline="javascript">
+        /* Dados passados pelo controller para o template */
+        var dailyAccessData = /*[[${dailyAccessData}]]*/ []; // Recebendo os dados
 
-    <!-- Select para escolher o período -->
-    <label for="period">Período:</label>
-    <select id="period" name="period">
-        <option value="7" ${period == '7' ? 'selected' : ''}>Últimos 7 dias</option>
-        <option value="30" ${period == '30' ? 'selected' : ''}>Últimos 30 dias</option>
-        <option value="60" ${period == '60' ? 'selected' : ''}>Últimos 60 dias</option>
-        <option value="90" ${period == '90' ? 'selected' : ''}>Últimos 90 dias</option>
-    </select>
+        // Preparando os dados para o gráfico
+        var labels = dailyAccessData.map(function(item) { return item.date; });
+        var data = dailyAccessData.map(function(item) { return item.count; });
 
-    <button type="submit">Filtrar</button>
-</form>
-
-<!-- Exibir o gráfico -->
-<div>
-    <h2>Gráfico de Acessos Diários</h2>
-    <canvas id="dailyAccessChart"></canvas>
-</div>
-
-<script>
-    // Dados de acessos diários passados pelo Thymeleaf para o JavaScript
-    var dailyAccesses = [[${dailyAccesses}]];  // Passando o array de objetos
-
-    // Agora podemos usar o método .map() no array para obter os dados
-    var labels = dailyAccesses.map(function(e) { return new Date(e.date); });
-    var data = dailyAccesses.map(function(e) { return e.count; });
-
-    var ctx = document.getElementById('dailyAccessChart').getContext('2d');
-    var dailyAccessChart = new Chart(ctx, {
-        type: 'line',  // Gráfico de linha
-        data: {
-            labels: labels,  // Datas no eixo X
-            datasets: [{
-                label: 'Acessos Diários',
-                data: data,  // Contagem de acessos no eixo Y
-                borderColor: 'rgba(75, 192, 192, 1)',
-                backgroundColor: 'rgba(75, 192, 192, 0.2)',
-                fill: false
-            }]
-        },
-        options: {
-            scales: {
-                x: {
-                    type: 'time',  // Tipo de escala para o eixo X
-                    time: {
-                        unit: 'day'  // A unidade de tempo será 'dia'
-                    },
-                    title: {
-                        display: true,
-                        text: 'Data'
+        // Criando o gráfico com Chart.js (gráfico de barras)
+        var ctx = document.getElementById('accessesChart').getContext('2d');
+        var accessesChart = new Chart(ctx, {
+            type: 'bar', // Tipo do gráfico (barra)
+            data: {
+                labels: labels, // As datas
+                datasets: [{
+                    label: 'Acessos Diários',
+                    data: data, // A contagem de acessos
+                    backgroundColor: 'rgba(75, 192, 192, 0.2)', // Cor das barras
+                    borderColor: 'rgb(75, 192, 192)', // Cor da borda
+                    borderWidth: 1 // Largura da borda
+                }]
+            },
+            options: {
+                scales: {
+                    y: {
+                        beginAtZero: true // Começa a escala do eixo Y no zero
                     }
                 }
             }
-        }
-    });
-</script>
-
+        });
+    </script>
+</div>
 </body>
 </html>

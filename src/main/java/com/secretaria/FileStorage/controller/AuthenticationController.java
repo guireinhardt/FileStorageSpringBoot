@@ -6,6 +6,7 @@
     import com.itextpdf.text.Paragraph;
     import com.secretaria.FileStorage.entity.*;
     import com.secretaria.FileStorage.infra.security.TokenService;
+    import com.secretaria.FileStorage.repository.SearchLogRepository;
     import com.secretaria.FileStorage.repository.UsersRepository;
     import jakarta.servlet.http.HttpServletResponse;
     import org.slf4j.Logger;
@@ -30,6 +31,8 @@
 
     import java.io.ByteArrayInputStream;
     import java.io.ByteArrayOutputStream;
+    import java.time.LocalDate;
+    import java.time.LocalDateTime;
     import java.util.Arrays;
     import java.util.HashMap;
     import java.util.List;
@@ -44,6 +47,8 @@
         private AuthenticationManager authenticationManager;
         @Autowired
         private UsersRepository repository;
+        @Autowired
+        private SearchLogRepository searchLogRepository;
         @Autowired
         private TokenService tokenService;
 
@@ -78,6 +83,12 @@
 
                 var user = (UsersEntity) auth.getPrincipal();
                 var token = tokenService.generateToken(user);
+
+                SearchLog loginLog = new SearchLog();
+                loginLog.setUser(user); // seta o usuario que fez o login
+                loginLog.setQuery("Login " + user.getUsername()); //definindo o tipo da consulta
+                loginLog.setOccurredAt(LocalDate.now()); //
+                searchLogRepository.save(loginLog);
 
                 // Extrai a role
                 String role = user.getAuthorities().stream()
