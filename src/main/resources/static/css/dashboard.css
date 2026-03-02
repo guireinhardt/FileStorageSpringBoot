@@ -1,0 +1,145 @@
+/* Reset básico */
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    font-family: 'Roboto', sans-serif;
+    background-color: #f4f6f9;
+    color: #333;
+}
+
+/* Layout */
+.container {
+    margin-top: 30px;
+}
+
+h1 {
+    font-size: 32px;
+    font-weight: 600;
+    color: #333;
+    text-align: center;
+    margin-bottom: 40px;
+}
+
+h2 {
+    font-size: 24px;
+    color: #007bff;
+    margin-bottom: 20px;
+}
+
+/* Cards */
+.card {
+    border-radius: 10px;
+    margin-bottom: 20px;
+    background-color: #fff;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+.card-header {
+    background-color: #007bff;
+    color: white;
+    font-size: 18px;
+    padding: 15px;
+    border-radius: 10px 10px 0 0;
+}
+
+.card-body {
+    padding: 20px;
+}
+
+.card-footer {
+    background-color: #f7f7f7;
+    padding: 15px;
+    text-align: center;
+    border-radius: 0 0 10px 10px;
+}
+
+/* Tabelas */
+.table {
+    width: 100%;
+    margin-top: 10px;
+    border-collapse: collapse;
+}
+
+.table th, .table td {
+    padding: 15px;
+    text-align: left;
+    border-bottom: 1px solid #ddd;
+}
+
+.table th {
+    background-color: #f1f1f1;
+    color: #007bff;
+}
+
+/* Botões */
+.btn-export {
+    background-color: #28a745;
+    color: white;
+    padding: 12px 20px;
+    border-radius: 5px;
+    border: none;
+    cursor: pointer;
+    font-size: 16px;
+    transition: background-color 0.3s ease;
+}
+
+.btn-export:hover {
+    background-color: #218838;
+}
+
+.select-period {
+    width: 200px;
+    padding: 8px;
+    font-size: 16px;
+    border-radius: 5px;
+    border: 1px solid #ddd;
+}
+
+/* Gráfico */
+.chart-container {
+    margin-top: 20px;
+    text-align: center;
+}
+
+canvas {
+    max-width: 100%;
+    height: auto;
+}
+
+/* Responsividade */
+@media (max-width: 768px) {
+    .card {
+        margin-bottom: 15px;
+    }
+
+    .table {
+        font-size: 14px;
+    }
+
+    .btn-export {
+        width: 100%;
+        font-size: 14px;
+    }
+
+    .select-period {
+        width: 100%;
+    }
+}
+
+@media (max-width: 576px) {
+    h1 {
+        font-size: 24px;
+    }
+
+    .card-body {
+        padding: 15px;
+    }
+
+    .card-footer {
+        padding: 10px;
+    }
+}

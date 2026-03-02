@@ -9,10 +9,10 @@ import java.time.LocalDateTime;
 
 @Entity
 @Table(name = "search_log", indexes = {
-    @Index(name = "idx_user_id", columnList = "user_id"),
-    @Index(name = "idx_keyword_id", columnList = "keyword_id"),
-    @Index(name = "idx_occurred_at", columnList = "occurred_at")
-        })
+        @Index(name = "idx_user_id", columnList = "user_id"),
+        @Index(name = "idx_keyword_id", columnList = "keyword_id"),
+        @Index(name = "idx_occurred_at", columnList = "occurred_at")
+})
 public class SearchLog {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -20,26 +20,27 @@ public class SearchLog {
 
     @ManyToOne
     @JoinColumn(name = "user_id", referencedColumnName = "id")
-    private UsersEntity user;  // Usuário que fez a pesquisa
+    private UsersEntity user; // Usuário que fez a pesquisa
 
     @ManyToOne
     @JoinColumn(name = "keyword_id", referencedColumnName = "id")
-    private KeywordEntity keyword;  // Palavra-chave associada
+    private KeywordEntity keyword; // Palavra-chave associada
 
     @ManyToOne
     @JoinColumn(name = "subkeyword_id", referencedColumnName = "id")
-    private SubkeywordEntity subkeyword;  // Subpalavra associada (se houver)
+    private SubkeywordEntity subkeyword; // Subpalavra associada (se houver)
 
-    @Column(nullable = false)
+    @Column(name = "occurred_at", nullable = false)
     @CreationTimestamp
-    private LocalDate occurredAt;  // Data da pesquisa
+    private LocalDate occurredAt; // Data da pesquisa (data gerada automaticamente no momento da criação)
 
     @Column(nullable = false)
-    @NotBlank(message = "A consulta não pode ser vazia")
-    private String query;  // A consulta realizada (palavra-chave ou subpalavra)
+    private String query; // A consulta realizada (palavra-chave ou subpalavra)
 
-    // geters e setters
+    @Column(name = "search_count", nullable = false)
+    private long searchCount = 0; // Contagem de buscas para aquela palavra-chave no dia
 
+    // Getters e setters
 
     public Long getId() {
         return id;
@@ -73,6 +74,14 @@ public class SearchLog {
         this.subkeyword = subkeyword;
     }
 
+    public long getSearchCount() {
+        return searchCount;
+    }
+
+    public void setSearchCount(long searchCount) {
+        this.searchCount = searchCount;
+    }
+
     public LocalDate getOccurredAt() {
         return occurredAt;
     }
@@ -89,3 +98,4 @@ public class SearchLog {
         this.query = query;
     }
 }
+

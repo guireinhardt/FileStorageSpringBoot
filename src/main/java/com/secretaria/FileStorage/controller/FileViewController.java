@@ -201,67 +201,57 @@ public class FileViewController {
             @RequestParam(required = false) String city,
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate startDate,
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate endDate,
+            HttpServletRequest request,
             Model model) throws IOException {
 
-        // Verifica se há filtros aplicados
-        boolean hasFilters = (query != null && !query.isBlank())
-                || (keyword != null && !keyword.isBlank())
-                || (subkeywords != null && !subkeywords.isEmpty())
-                || (institute != null && !institute.isBlank())
-                || (city != null && !city.isBlank())
-                || startDate != null
-                || endDate != null;
+        // parâmetros “seguros” para o service
+        String q = (query == null) ? "" : query;
+        String kw = (keyword == null) ? "" : keyword;
+        List<String> subs = (subkeywords == null) ? new ArrayList<>() : new ArrayList<>(subkeywords);
+        String inst = (institute == null) ? "" : institute;
+        String cty = (city == null) ? "" : city;
 
-        List<FileResultDTO> results = new ArrayList<>();
+        // hasFilters verdadeiro apenas se veio algum parâmetro na URL
+        boolean hasFilters = !request.getParameterMap().isEmpty();
 
-        // Se houver filtros, realiza a busca de arquivos
+        List<FileResultDTO> results = Collections.emptyList();
         if (hasFilters) {
-            // Modifica os subkeywords para substituir os espaços por underscores antes da busca
-            if (subkeywords != null) {
-                subkeywords = subkeywords.stream()
-                        .map(s -> s.replace(" ", "_").toUpperCase()) // Substitui espaços por underscores e coloca tudo em maiúsculas
-                        .collect(Collectors.toList());
-            }
+            // normalização de subkeywords igual você já fazia
+            subs = subs.stream()
+                    .map(s -> s.replace(" ", "_").toUpperCase())
+                    .toList();
 
-            // Realiza a busca no serviço, passando os subkeywords já modificados
-            results = fileSearchService.searchFiles(query, keyword, subkeywords, institute, city, startDate, endDate);
+            results = fileSearchService.searchFiles(q, kw, subs, inst, cty, startDate, endDate);
         }
 
-        // Carrega todas as palavras-chave e suas subpalavras
-        List<KeywordEntity> allKeywords = keywordService.getAllKeywords();
+        // Listas de apoio SEM NPE
+        List<KeywordEntity> allKeywords = Optional.ofNullable(keywordService.getAllKeywords()).orElse(List.of());
         List<String> keywords = new ArrayList<>();
         Map<String, List<String>> subkeywordsMap = new HashMap<>();
-
-        // Preenche as palavras-chave e subpalavras no modelo
         for (KeywordEntity k : allKeywords) {
             keywords.add(k.getPalavra());
-            subkeywordsMap.put(k.getPalavra(), k.getSubkeywords().stream()
-                    .map(SubkeywordEntity::getPalavra)
-                    .collect(Collectors.toList()));
+            List<String> subsList = Optional.ofNullable(k.getSubkeywords()).orElse(List.of())
+                    .stream().map(SubkeywordEntity::getPalavra).toList();
+            subkeywordsMap.put(k.getPalavra(), subsList);
         }
-        System.out.println("Palavras-chave encontradas: " + keywords);
 
-        // Passa os resultados, palavras-chave e subpalavras para o modelo
         model.addAttribute("files", results);
         model.addAttribute("hasFilters", hasFilters);
         model.addAttribute("keywords", keywords);
-        model.addAttribute("selectedKeyword", keyword);
+        model.addAttribute("selectedKeyword", kw);
         model.addAttribute("subkeywordsMap", subkeywordsMap);
-        model.addAttribute("selectedSubkeywords", subkeywords != null ? subkeywords : new ArrayList<>());
-
-        // Passa cidades e institutos
-        model.addAttribute("cities", cityService.getAllCities());
-        model.addAttribute("selectedCity", city);
-
-        model.addAttribute("institutes", instituteService.getAllInstitutes());
-        model.addAttribute("selectedInstitute", institute);
-
-        // Passa as datas de início e fim
+        model.addAttribute("selectedSubkeywords", subs);
+        model.addAttribute("cities", Optional.ofNullable(cityService.getAllCities()).orElse(List.of()));
+        model.addAttribute("selectedCity", cty);
+        model.addAttribute("institutes", Optional.ofNullable(instituteService.getAllInstitutes()).orElse(List.of()));
+        model.addAttribute("selectedInstitute", inst);
         model.addAttribute("startDate", startDate);
         model.addAttribute("endDate", endDate);
+        model.addAttribute("query", q); // para th:value no input
 
-        return "search"; // O nome do template da página de resultados
+        return "search";
     }
+
 
 
     private String sanitizeFileName(String fileName) {

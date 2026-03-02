@@ -1,5 +1,10 @@
 package com.secretaria.FileStorage.controller;
 
+import com.secretaria.FileStorage.entity.FileEntity;
+import com.secretaria.FileStorage.entity.FileVisibility;
+import com.secretaria.FileStorage.entity.FolderEntity;
+import com.secretaria.FileStorage.repository.FileRepository;
+import com.secretaria.FileStorage.repository.FolderRepository;
 import com.secretaria.FileStorage.service.FileStorageService;
 import com.secretaria.FileStorage.utils.DeletableInputStreamResource;
 import com.secretaria.FileStorage.utils.FileValidator;
@@ -52,6 +57,10 @@ public class FileStorageController {
     @Autowired
     private FileListService fileListService;
 
+    @Autowired
+    private FolderRepository folderRepository;
+    @Autowired
+    private FileRepository fileRepository;
     /* @PostMapping("/uploadFiles")
     public String uploadFiles(@RequestParam(value = "file", required = false) MultipartFile file,
                               @RequestParam(value = "files", required = false) MultipartFile[] files,
@@ -98,9 +107,12 @@ public class FileStorageController {
     } */
     @PostMapping("/uploadFiles")
     @ResponseBody
-    public ResponseEntity<String> uploadFiles(@RequestParam(value = "file", required = false) MultipartFile file,
-                                              @RequestParam(value = "files", required = false) MultipartFile[] files,
-                                              @RequestParam("folderPath") String folderPath) throws Exception {
+    public ResponseEntity<String> uploadFiles(
+            @RequestParam(value = "file", required = false) MultipartFile file,
+            @RequestParam(value = "files", required = false) MultipartFile[] files,
+            @RequestParam("folderPath") String folderPath,
+            Principal principal
+    ) throws Exception {
         String message;
 
         if (file != null && !file.isEmpty()) {
@@ -111,7 +123,7 @@ public class FileStorageController {
             }
 
             // Lógica para upload de um único arquivo
-            UploadFileResponseVO response = uploadSingleFile(file, folderPath);
+            UploadFileResponseVO response = uploadSingleFile(file, folderPath, principal);
             message = "Arquivo enviado com sucesso: " + response.getFileName();
         } else if (files != null && files.length > 0) {
             // Valida os arquivos múltiplos com base no tipo MIME
@@ -123,7 +135,7 @@ public class FileStorageController {
             }
 
             // Lógica para upload de múltiplos arquivos
-            List<UploadFileResponseVO> responses = uploadMultipleFiles(files, folderPath);
+            List<UploadFileResponseVO> responses = uploadMultipleFiles(files, folderPath, principal);
             message = "Arquivos enviados com sucesso: " + responses.stream()
                     .map(UploadFileResponseVO::getFileName)
                     .collect(Collectors.joining(", "));
@@ -136,20 +148,57 @@ public class FileStorageController {
         return ResponseEntity.ok(message);
     }
 
-    private UploadFileResponseVO uploadSingleFile(MultipartFile file, String folderPath) throws Exception {
+    private UploadFileResponseVO uploadSingleFile(MultipartFile file, String folderPath, Principal principal) throws Exception {
         String fileName = fileStorageService.storeFile(file, folderPath);
+
+        // storageKey relativo (para no futuro virar key no GCS)
+        String storageKey = Paths.get(folderPath).resolve(fileName).toString().replace("\\", "/");
+
+        // Pega a “pasta raiz” (primeiro segmento). Ex: "02.FINALIZADOS/2026/evento" -> "02.FINALIZADOS"
+        String rootFolderName = folderPath;
+        if (rootFolderName != null) {
+            rootFolderName = rootFolderName.replace("\\", "/");
+            int idx = rootFolderName.indexOf("/");
+            if (idx > 0) rootFolderName = rootFolderName.substring(0, idx);
+            rootFolderName = rootFolderName.trim();
+        }
+
+        // Se não existir no banco, cria (isPublic=false por padrão)
+        final String folderNameFinal = rootFolderName;
+
+        FolderEntity folder = folderRepository.findByName(folderNameFinal)
+                .orElseGet(() -> folderRepository.save(new FolderEntity(folderNameFinal, false, null)));
+        // Cria registro do arquivo no banco
+        FileEntity entity = new FileEntity();
+        entity.setFolder(folder);
+        entity.setOriginalName(fileName);
+        entity.setContentType(file.getContentType() != null ? file.getContentType() : "application/octet-stream");
+        entity.setSize(file.getSize());
+        entity.setStorageKey(storageKey);
+
+        // Regra inicial: se a pasta for pública (ex.: 02.FINALIZADOS), pode marcar como PUBLIC automaticamente.
+        // Se você preferir mais segurança: deixe RESTRICTED e crie um botão "Publicar" depois.
+        entity.setVisibility(folder.isPublic() ? FileVisibility.PUBLIC : FileVisibility.RESTRICTED);
+
+        if (principal != null) {
+            entity.setCreatedBy(principal.getName());
+        }
+
+        fileRepository.save(entity);
+
         String fileDownloadUri = ServletUriComponentsBuilder.fromCurrentContextPath()
-                .path("/downloadFile/")
-                .path(fileName)
+                .path("/files/")
+                .path(entity.getId().toString())
+                .path("/download")
                 .toUriString();
 
         return new UploadFileResponseVO(fileName, fileDownloadUri, file.getContentType(), file.getSize());
     }
 
-    private List<UploadFileResponseVO> uploadMultipleFiles(MultipartFile[] files, String folderPath) throws Exception {
+    private List<UploadFileResponseVO> uploadMultipleFiles(MultipartFile[] files, String folderPath, Principal principal) throws Exception {
         List<UploadFileResponseVO> responses = new ArrayList<>();
-        for (MultipartFile file : files) {
-            responses.add(uploadSingleFile(file, folderPath));
+        for (MultipartFile f : files) {
+            responses.add(uploadSingleFile(f, folderPath, principal));
         }
         return responses;
     }

@@ -1,11 +1,13 @@
 package com.secretaria.FileStorage.service;
 
 import java.io.File;
+import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.nio.file.*;
 import java.nio.file.attribute.BasicFileAttributes;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -52,9 +54,28 @@ public class FileStorageService {
         }
     } */
     public String storeFile(MultipartFile file, String folderPath) throws IOException {
-        Path destinationFile = this.fileStorageLocation.resolve(Paths.get(folderPath)).resolve(file.getOriginalFilename()).normalize().toAbsolutePath();
+        String originalName = StringUtils.cleanPath(Objects.requireNonNull(file.getOriginalFilename()));
+
+        // 1) Resolve o diretório destino dentro do uploadDir
+        Path targetDir = this.fileStorageLocation.resolve(Paths.get(folderPath)).normalize();
+
+        // 2) Bloqueia tentativa de sair do diretório base (../)
+        if (!targetDir.startsWith(this.fileStorageLocation)) {
+            throw new FileStorageException("Caminho de pasta inválido.");
+        }
+
+        Files.createDirectories(targetDir);
+
+        // 3) Resolve o arquivo final
+        Path destinationFile = targetDir.resolve(originalName).normalize();
+
+        // 4) Bloqueia novamente (casos esquisitos com nome)
+        if (!destinationFile.startsWith(this.fileStorageLocation)) {
+            throw new FileStorageException("Nome de arquivo inválido.");
+        }
+
         Files.copy(file.getInputStream(), destinationFile, StandardCopyOption.REPLACE_EXISTING);
-        return file.getOriginalFilename();
+        return originalName;
     }
 
 
@@ -128,21 +149,22 @@ public class FileStorageService {
 
 
 
-    public Resource loadFileAsResource(String fileName) {
+    public Resource loadFileAsResource(String relativePath) {
         try {
-            // Resolve o caminho do arquivo a partir do diretório base
-            Path filePath = this.fileStorageLocation.resolve(fileName).normalize();
-            System.out.println("Tentando carregar o arquivo de: " + filePath.toString()); // Log do caminho
-            Resource resource = new UrlResource(filePath.toUri());
+            Path filePath = this.fileStorageLocation.resolve(relativePath).normalize();
 
-            // Verifica se o recurso existe
-            if (resource.exists()) {
-                return resource;
-            } else {
-                throw new FileStorageNotFoundException("File not found " + fileName);
+            if (!filePath.startsWith(this.fileStorageLocation)) {
+                throw new FileStorageException("Caminho inválido.");
             }
-        } catch (Exception e) {
-            throw new FileStorageNotFoundException("File not found " + fileName, e);
+
+            Resource resource = new UrlResource(filePath.toUri());
+            if (resource.exists() && resource.isReadable()) {
+                return resource;
+            }
+            throw new FileNotFoundException("Arquivo não encontrado: " + relativePath);
+
+        } catch (Exception ex) {
+            throw new FileStorageException("Erro ao carregar arquivo: " + relativePath, ex);
         }
     }
     //método auxiliar para excluir os arquivos recursivamente

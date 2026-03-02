@@ -1,17 +1,19 @@
 package com.secretaria.FileStorage.service;
 
+import com.secretaria.FileStorage.dto.SearchDayCountDTO;
+import com.secretaria.FileStorage.dto.SearchTermCountDTO;
 import com.secretaria.FileStorage.entity.SearchLog;
 import com.secretaria.FileStorage.entity.UsersEntity;
 import com.secretaria.FileStorage.repository.SearchLogRepository;
 import com.secretaria.FileStorage.repository.UsersRepository;
+import com.secretaria.FileStorage.dto.ChartDTO;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.stream.Collectors;
 
 @Service
@@ -37,7 +39,6 @@ public class DashboardService {
                 .toList();  // Converte o Stream em uma lista
     }
 
-    //
     // Agrupa os usuários por dia e conta a quantidade de acessos por dia
     public Map<String, Long> getActiveUsersByDay(LocalDate startDate, LocalDate endDate) {
         List<SearchLog> logs = searchLogRepository.findByOccurredAtBetween(startDate, endDate);
@@ -67,14 +68,28 @@ public class DashboardService {
     }
 
     // Relatório de acessos diários
-    public Map<String, Long> getAccessesByDay(LocalDate startDate, LocalDate endDate) {
-        List<SearchLog> logs = searchLogRepository.findByOccurredAtBetween(startDate, endDate);
+    public ChartDTO getAccessesByDay(LocalDate start, LocalDate end) {
+        // Buscar os dados agregados por dia
+        List<Object[]> rows = searchLogRepository.countByDayBetween(start, end);
 
-        return logs.stream()
-                .collect(Collectors.groupingBy(
-                        log -> log.getOccurredAt().toString(), // Agrupando por data (formato "yyyy-MM-dd")
-                        Collectors.counting() // Contando a quantidade de acessos por data
-                ));
+        // Criando um mapa para armazenar as contagens de acessos por dia
+        Map<LocalDate, Long> accessesByDay = new LinkedHashMap<>();
+        for (Object[] row : rows) {
+            LocalDate day = (LocalDate) row[0];  // A data do acesso
+            Long count = (Long) row[1];  // A contagem de acessos
+            accessesByDay.put(day, count);
+        }
+
+        // Preenchendo os dias faltantes com zero
+        List<String> labels = new ArrayList<>();
+        List<Long> counts = new ArrayList<>();
+
+        for (LocalDate date = start; !date.isAfter(end); date = date.plusDays(1)) {
+            labels.add(date.toString());  // Adiciona a data como rótulo
+            counts.add(accessesByDay.getOrDefault(date, 0L));  // Se não houver registros, coloca 0
+        }
+
+        return new ChartDTO(labels, counts);  // Retorna os dados prontos para o frontend
     }
 
     // Relatório de acessos mensais
@@ -93,4 +108,85 @@ public class DashboardService {
         // Integre aqui com uma API externa para geolocalização
         return "Brasil";  // Exemplo de retorno estático
     }
+
+    // Contagem de buscas por palavra-chave
+    public Map<LocalDate, Long> getSearchCountByDay(LocalDate startDate, LocalDate endDate) {
+        List<SearchLog> logs = searchLogRepository.findByOccurredAtBetween(startDate, endDate);
+
+        return logs.stream()
+                .collect(Collectors.groupingBy(
+                        SearchLog::getOccurredAt,  // Agrupa pela data de pesquisa
+                        Collectors.counting()      // Conta quantas vezes cada data apareceu
+                ));
+    }
+    public Map<String, Long> getSearchCountByKeyword(LocalDate start, LocalDate end) {
+        // Busca logs de busca no intervalo de datas
+        List<SearchLog> logs = searchLogRepository.findByOccurredAtBetween(start, end);
+
+        // Agrupa os logs por palavra-chave e conta a quantidade de buscas para cada uma
+        return logs.stream()
+                .filter(log -> log.getKeyword() != null)  // Garante que estamos contando apenas palavras-chave válidas
+                .collect(Collectors.groupingBy(
+                        log -> log.getKeyword().getPalavra(),  // Agrupando pela palavra-chave
+                        Collectors.counting()                  // Contando quantas vezes cada palavra-chave apareceu
+                ));
+    }
+
+    public List<SearchDayCountDTO> getSearchesByDay(LocalDate start, LocalDate end) {
+        List<Object[]> rows = searchLogRepository.countByDayBetween(start, end);
+        return rows.stream()
+                .map(r -> new SearchDayCountDTO(
+                        (LocalDate) r[0],
+                        ((Number) r[1]).longValue()
+                ))
+                .toList();
+    }
+
+    // 📌 Top termos (coalesce(keyword.palavra, query))
+    public List<SearchTermCountDTO> getTopTerms(LocalDate start, LocalDate end, int limit) {
+        List<Object[]> rows = searchLogRepository.countSearchesByKeywordBetween(start, end);
+        return rows.stream()
+                .map(r -> new SearchTermCountDTO(
+                        (String) r[0],
+                        ((Number) r[1]).longValue()
+                ))
+                .sorted(Comparator.comparingLong(SearchTermCountDTO::getTotal).reversed())
+                .limit(limit)
+                .toList();
+    }
+
+    // 📌 Top termos usando query pura (se quiser analisar só `sl.query`)
+    public List<SearchTermCountDTO> getTopRawQueries(LocalDate start, LocalDate end, int limit) {
+        List<Object[]> rows = searchLogRepository.countSearchTermsBetween(start, end);
+        return rows.stream()
+                .map(r -> new SearchTermCountDTO(
+                        (String) r[0],
+                        ((Number) r[1]).longValue()
+                ))
+                .sorted(Comparator.comparingLong(SearchTermCountDTO::getTotal).reversed())
+                .limit(limit)
+                .toList();
+    }
+
+    // 📌 Resumo geral (pode ser usado no “cards” do dashboard)
+    public Map<String, Object> getSummary(LocalDate start, LocalDate end) {
+        List<SearchDayCountDTO> byDay = getSearchesByDay(start, end);
+        long totalSearches = byDay.stream().mapToLong(SearchDayCountDTO::getTotal).sum();
+
+        long activeUsers = usersRepository.countActiveUsers();
+        long totalUsers = usersRepository.count();
+
+        Map<String, Object> summary = new HashMap<>();
+        summary.put("totalSearches", totalSearches);
+        summary.put("daysWithSearches", byDay.size());
+        summary.put("activeUsers", activeUsers);
+        summary.put("totalUsers", totalUsers);
+
+        return summary;
+    }
+
+
+
+
+
 }

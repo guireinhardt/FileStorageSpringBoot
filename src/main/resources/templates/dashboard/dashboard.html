@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="pt-br" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>Dashboard - Relatórios</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link rel="stylesheet" href="/css/dashboard.css">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+</head>
+<body>
+
+<div class="container mt-5">
+    <h1 class="mb-4 text-center">Dashboard - Período de {{period}} dias</h1>
+
+    <!-- Gráfico de Acessos por Dia -->
+    <div class="row">
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header">
+                    Acessos por Dia
+                </div>
+                <div class="card-body">
+                    <canvas id="accessChart" width="600" height="400"></canvas>
+                </div>
+            </div>
+        </div>
+
+        <!-- Palavras mais buscadas -->
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header">
+                    Palavras Mais Buscadas
+                </div>
+                <div class="card-body">
+                    <table class="table">
+                        <thead>
+                        <tr>
+                            <th>Termo</th>
+                            <th>Quantidade de Buscas</th>
+                        </tr>
+                        </thead>
+                        <tbody>
+                        <tr th:each="entry : ${searchCountByKeyword}">
+                            <td th:text="${entry.key}"></td>
+                            <td th:text="${entry.value}"></td>
+                        </tr>
+                        </tbody>
+                    </table>
+                    <button class="btn btn-success" onclick="window.location.href='/dashboard/export'">Exportar Dados</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+</div>
+
+<script th:inline="javascript">
+    // Dados passados do servidor (Acessos por Dia)
+    const chartData = /*[[${chartJsonAccesses}]]*/ "{}";  // O Thymeleaf irá substituir com os dados reais
+    const parsed = JSON.parse(chartData);  // Converte os dados JSON em objeto JavaScript
+
+    // Renderiza o gráfico com os dados recebidos
+    let chart, ctx = document.getElementById('accessChart').getContext('2d');
+
+    function renderChart(data) {
+        if (chart) {
+            chart.destroy();  // Destruir o gráfico anterior antes de criar um novo
+        }
+
+        chart = new Chart(ctx, {
+            type: 'line',  // Gráfico de linha
+            data: {
+                labels: data.labels,  // Rótulos (datas)
+                datasets: [{
+                    label: 'Acessos por Dia',
+                    data: data.counts,  // Contagem de acessos
+                    borderColor: 'rgb(75, 192, 192)',  // Cor da linha
+                    fill: false
+                }]
+            },
+            options: {
+                responsive: true,
+                scales: {
+                    y: { beginAtZero: true }
+                }
+            }
+        });
+    }
+
+    // Renderiza o gráfico com os dados do servidor
+    renderChart(parsed);
+
+</script>
+
+<script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2"></script>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.min.js"></script>
+</body>
+</html>
