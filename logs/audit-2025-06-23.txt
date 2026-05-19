@@ -1,6 +1,0 @@
-[2025-06-23T09:57:05.047093200] Usuário: jamesed | Ação: NAVEGAÇÃO | Detalhes: Acessou a pasta: /
-[2025-06-23T09:57:42.642064200] Usuário: jamesed | Ação: NAVEGAÇÃO | Detalhes: Acessou a pasta: /
-[2025-06-23T10:13:31.078957600] Usuário: jamesed | Ação: NAVEGAÇÃO | Detalhes: Acessou a pasta: /
-[2025-06-23T10:58:27.925977100] Usuário: jamesed | Ação: NAVEGAÇÃO | Detalhes: Acessou a pasta: /
-[2025-06-23T11:35:26.501190700] Usuário: jamesed | Ação: NAVEGAÇÃO | Detalhes: Acessou a pasta: /
-[2025-06-23T11:59:28.781653900] Usuário: jamesed | Ação: NAVEGAÇÃO | Detalhes: Acessou a pasta: /
